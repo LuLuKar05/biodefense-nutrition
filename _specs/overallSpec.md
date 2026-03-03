@@ -37,7 +37,13 @@ OpenClaw runs locally on the user's device. It connects to messaging platforms a
 
 **MVP Strategy:** All 5 phases live with graceful fallback to pre-computed mocks at Phases 3-4. This ensures the demo always works while showing the real pipeline when it succeeds.
 
-**Channel MVP Scope:** Telegram + Discord for MVP. WhatsApp works with OpenClaw out of the box (Baileys library, no Meta Business API needed) — stretch goal.
+**Channel Support:** OpenClaw natively supports **22+ messaging platforms** from a single gateway. Active channels configured:
+- **Primary:** Telegram, Discord, WhatsApp, Slack (tokens in `.env`)
+- **Built-in:** WebChat (served from gateway at `:18789` — great for judge demos)
+- **Optional:** Signal, Microsoft Teams, Google Chat, Matrix, LINE, Mattermost, IRC, iMessage, Twitch, and more
+- **All channels run simultaneously** — users can interact from any platform and get proactive threat alerts on all of them.
+
+See `SETUP_CHANNELS.md` for per-platform setup instructions.
 
 ---
 
@@ -48,7 +54,7 @@ OpenClaw runs locally on the user's device. It connects to messaging platforms a
 │                   USER'S MACHINE (LOCAL)                        │
 │                   All user data stays here                      │
 │                                                                 │
-│   User (Telegram / Discord / WhatsApp)                          │
+│   User (Telegram / Discord / WhatsApp / Slack / WebChat / +17 more)     │
 │                  │                                              │
 │                  ▼                                              │
 │   ┌──────────────────────────────────┐                          │

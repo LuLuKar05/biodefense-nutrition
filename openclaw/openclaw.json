@@ -1,8 +1,10 @@
 {
   // OpenClaw Gateway Configuration for Biodefense Nutrition
   // Docs: https://docs.openclaw.ai/gateway/configuration
+  // Runtime: Node >= 22 | Install: npm install -g openclaw@latest
+  // Start:  openclaw gateway --port 18789 --verbose
 
-  // Agent configuration
+  // ── Agent ──
   "agent": {
     "model": "anthropic/claude-sonnet-4-20250514",
     "skipBootstrap": true
@@ -14,39 +16,88 @@
     }
   },
 
-  // Channel connections — OpenClaw handles all bot logic
+  // ── Channels ──
+  // OpenClaw natively connects to all these platforms.
+  // Set dmPolicy: "open" + allowFrom: ["*"] for hackathon demo (open to all).
+  // In production, use dmPolicy: "pairing" (default) for invite-only access.
   "channels": {
+
+    // 1. TELEGRAM (grammY) — most common for bot hackathons
+    //    Get token: talk to @BotFather on Telegram → /newbot
+    //    Env: TELEGRAM_BOT_TOKEN
     "telegram": {
-      // Bot token from env: TELEGRAM_BOT_TOKEN
-      // Set allowFrom to restrict who can message the bot
-      // allowFrom: ["*"],  // open for hackathon demo
+      "dmPolicy": "open",
+      "allowFrom": ["*"],
+      "groups": {
+        "*": { "requireMention": true }
+      }
     },
+
+    // 2. DISCORD (discord.js) — community & hackathon demos
+    //    Get token: https://discord.com/developers/applications → Bot → Token
+    //    Env: DISCORD_BOT_TOKEN
     "discord": {
-      // Bot token from env: DISCORD_BOT_TOKEN
-      // Set guilds/allowFrom to restrict access
+      "dmPolicy": "open",
+      "allowFrom": ["*"],
+      "guilds": ["*"]
+    },
+
+    // 3. WHATSAPP (Baileys) — world's most popular messenger
+    //    No Meta Business API needed! Link via: openclaw channels login
+    //    Scans QR code from your phone's WhatsApp → Linked Devices
+    "whatsapp": {
+      "dmPolicy": "open",
+      "allowFrom": ["*"]
+    },
+
+    // 4. SLACK (Bolt) — professional / workspace use
+    //    Create app: https://api.slack.com/apps → Socket Mode + Bot Token
+    //    Env: SLACK_BOT_TOKEN + SLACK_APP_TOKEN
+    "slack": {
+      "dmPolicy": "open",
+      "allowFrom": ["*"]
     }
-    // WhatsApp (stretch goal) — uses Baileys, no Meta Business API needed
-    // whatsapp: {
-    //   allowFrom: ["*"],
-    // },
+
+    // ── Additional channels (uncomment to enable) ──
+    // Each just needs its env vars set — OpenClaw handles the rest.
+
+    // 5. SIGNAL — requires signal-cli installed
+    // "signal": { "allowFrom": ["*"] },
+
+    // 6. MICROSOFT TEAMS — requires Bot Framework app registration
+    // "msteams": { "allowFrom": ["*"] },
+
+    // 7. GOOGLE CHAT — requires Chat API project
+    // "googlechat": { "allowFrom": ["*"] },
+
+    // 8. MATRIX — requires homeserver + access token
+    // "matrix": { "allowFrom": ["*"] },
+
+    // 9. LINE
+    // "line": { "allowFrom": ["*"] },
+
+    // 10. MATTERMOST
+    // "mattermost": { "allowFrom": ["*"] },
   },
 
-  // Webhook endpoint for proactive alerts from Celery workers
+  // ── Webhook endpoint for proactive alerts ──
+  // Celery workers POST threat alerts here → pushed to all connected channels.
+  // Token from env: OPENCLAW_HOOKS_TOKEN
   "hooks": {
     "enabled": true,
-    // Token from env: OPENCLAW_HOOKS_TOKEN
     "path": "/hooks"
   },
 
-  // Session configuration
-  "session": {
-    // Keep sessions alive for returning users
+  // ── Browser (for WebChat UI) ──
+  // Access at http://localhost:18789 — great for judge demos
+  "browser": {
+    "enabled": true
   },
 
-  // Messages
+  // ── Messages ──
   "messages": {
     "groupChat": {
-      "mentionPatterns": ["@nutrishield", "@NutriShield"]
+      "mentionPatterns": ["@nutrishield", "@NutriShield", "@biodefense"]
     }
   }
 }

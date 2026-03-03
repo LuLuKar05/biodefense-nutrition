@@ -1,0 +1,50 @@
+{
+  "templates": {
+    "standard": {
+      "breakfast": [
+        {"name": "Oatmeal with Berries", "protein_g": 8, "carbs_g": 45, "fat_g": 5, "calories": 257},
+        {"name": "Scrambled Eggs on Toast", "protein_g": 20, "carbs_g": 30, "fat_g": 15, "calories": 335}
+      ],
+      "lunch": [
+        {"name": "Grilled Chicken Salad", "protein_g": 35, "carbs_g": 15, "fat_g": 12, "calories": 308},
+        {"name": "Turkey & Avocado Wrap", "protein_g": 28, "carbs_g": 40, "fat_g": 18, "calories": 430}
+      ],
+      "dinner": [
+        {"name": "Salmon with Roasted Vegetables", "protein_g": 34, "carbs_g": 25, "fat_g": 16, "calories": 380},
+        {"name": "Lean Beef Stir-Fry with Rice", "protein_g": 30, "carbs_g": 50, "fat_g": 12, "calories": 428}
+      ],
+      "snacks": [
+        {"name": "Greek Yogurt with Honey", "protein_g": 15, "carbs_g": 20, "fat_g": 4, "calories": 176},
+        {"name": "Mixed Nuts (1 oz)", "protein_g": 5, "carbs_g": 8, "fat_g": 14, "calories": 174}
+      ]
+    },
+    "vegan": {
+      "breakfast": [
+        {"name": "Smoothie Bowl (banana, spinach, plant protein)", "protein_g": 18, "carbs_g": 50, "fat_g": 8, "calories": 344}
+      ],
+      "lunch": [
+        {"name": "Lentil Soup with Whole Grain Bread", "protein_g": 20, "carbs_g": 55, "fat_g": 6, "calories": 354}
+      ],
+      "dinner": [
+        {"name": "Tofu Stir-Fry with Brown Rice", "protein_g": 22, "carbs_g": 50, "fat_g": 14, "calories": 414}
+      ],
+      "snacks": [
+        {"name": "Hummus with Veggies", "protein_g": 6, "carbs_g": 15, "fat_g": 8, "calories": 156}
+      ]
+    },
+    "keto": {
+      "breakfast": [
+        {"name": "Bacon & Cheese Omelette", "protein_g": 25, "carbs_g": 3, "fat_g": 30, "calories": 390}
+      ],
+      "lunch": [
+        {"name": "Avocado Tuna Salad", "protein_g": 30, "carbs_g": 5, "fat_g": 28, "calories": 396}
+      ],
+      "dinner": [
+        {"name": "Grilled Steak with Butter & Asparagus", "protein_g": 40, "carbs_g": 6, "fat_g": 32, "calories": 472}
+      ],
+      "snacks": [
+        {"name": "Macadamia Nuts (1 oz)", "protein_g": 2, "carbs_g": 4, "fat_g": 22, "calories": 204}
+      ]
+    }
+  }
+}

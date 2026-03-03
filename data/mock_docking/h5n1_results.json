@@ -1,0 +1,12 @@
+[
+  {
+    "threat_name": "H5N1",
+    "results": [
+      {"ligand": "Quercetin", "smiles": "O=C1C(O)=C(c2ccc(O)c(O)c2)OC2=CC(O)=CC(O)=C12", "confidence_score": 0.92},
+      {"ligand": "EGCG", "smiles": "OC1=CC(O)=C2C(=O)C(OC3=CC(O)=C(O)C(O)=C3)C(O)=C(O2)C1", "confidence_score": 0.87},
+      {"ligand": "Curcumin", "smiles": "COC1=CC(=CC(OC)=C1O)/C=C/C(=O)CC(=O)/C=C/C2=CC(OC)=C(O)C=C2", "confidence_score": 0.81},
+      {"ligand": "Luteolin", "smiles": "OC1=CC(O)=C2C(=O)C=C(OC2=C1)C3=CC(O)=C(O)C=C3", "confidence_score": 0.76},
+      {"ligand": "Kaempferol", "smiles": "OC1=CC(O)=C2C(=O)C(O)=C(OC2=C1)C3=CC=C(O)C=C3", "confidence_score": 0.72}
+    ]
+  }
+]

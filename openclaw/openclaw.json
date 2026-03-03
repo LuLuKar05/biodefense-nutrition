@@ -1,0 +1,52 @@
+{
+  // OpenClaw Gateway Configuration for Biodefense Nutrition
+  // Docs: https://docs.openclaw.ai/gateway/configuration
+
+  // Agent configuration
+  "agent": {
+    "model": "anthropic/claude-sonnet-4-20250514",
+    "skipBootstrap": true
+  },
+
+  "agents": {
+    "defaults": {
+      "workspace": "./workspace"
+    }
+  },
+
+  // Channel connections — OpenClaw handles all bot logic
+  "channels": {
+    "telegram": {
+      // Bot token from env: TELEGRAM_BOT_TOKEN
+      // Set allowFrom to restrict who can message the bot
+      // allowFrom: ["*"],  // open for hackathon demo
+    },
+    "discord": {
+      // Bot token from env: DISCORD_BOT_TOKEN
+      // Set guilds/allowFrom to restrict access
+    }
+    // WhatsApp (stretch goal) — uses Baileys, no Meta Business API needed
+    // whatsapp: {
+    //   allowFrom: ["*"],
+    // },
+  },
+
+  // Webhook endpoint for proactive alerts from Celery workers
+  "hooks": {
+    "enabled": true,
+    // Token from env: OPENCLAW_HOOKS_TOKEN
+    "path": "/hooks"
+  },
+
+  // Session configuration
+  "session": {
+    // Keep sessions alive for returning users
+  },
+
+  // Messages
+  "messages": {
+    "groupChat": {
+      "mentionPatterns": ["@nutrishield", "@NutriShield"]
+    }
+  }
+}

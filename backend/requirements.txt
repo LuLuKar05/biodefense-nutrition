@@ -15,11 +15,8 @@ httpx==0.28.*
 # Bioinformatics
 biopython==1.84
 
-# Telegram Bot
-python-telegram-bot==21.*
-
-# Discord Bot
-discord.py==2.*
+# Note: No bot libraries needed — OpenClaw Gateway handles Telegram/Discord/WhatsApp
+# Bot connections natively. Our backend is a pure API server.
 
 # Environment
 python-dotenv==1.*

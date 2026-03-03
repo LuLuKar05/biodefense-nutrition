@@ -1,5 +1,8 @@
 version: "3.9"
 
+# Threat Intelligence Backend ONLY — zero user data.
+# OpenClaw runs LOCALLY on the user's device (not in Docker).
+
 services:
   mongodb:
     image: mongo:7

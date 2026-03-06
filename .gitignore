@@ -46,7 +46,12 @@ data/meals/
 data/threat_cache/
 
 # Amina CLI credentials (stored by amina auth set-key)
+
 .amina/
 
 # Logs
 *.log
+
+# Gateway & Layer 3 build artifacts
+gateway/__pycache__/
+server/__pycache__/

@@ -1,7 +1,7 @@
 """Quick test for Amina AI protein analysis + compound scoring."""
 import asyncio
 import json
-from threat_backend.amina_ai import analyse_protein, score_compounds_against_protein, amina_analyse
+from server.amina_ai import analyse_protein, score_compounds_against_protein, amina_analyse
 
 # Load H5N1 FASTA
 with open("data/mock_sequences/h5n1_hemagglutinin.fasta") as f:

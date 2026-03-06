@@ -17,7 +17,7 @@ if __name__ == "__main__":
     print()
 
     uvicorn.run(
-        "threat_backend.server:app",
+        "server.app:app",
         host="127.0.0.1",
         port=8100,
         log_level="info",

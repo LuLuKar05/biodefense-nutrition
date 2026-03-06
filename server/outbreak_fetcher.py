@@ -396,7 +396,7 @@ async def generate_outbreaks_from_who(
 
     # ── Part 2: UK seasonal patterns ─────────────────────────
     # These complement WHO data with local epidemiological knowledge
-    from threat_backend.outbreak_mock import generate_outbreaks as mock_outbreaks
+    from server.outbreak_mock import generate_outbreaks as mock_outbreaks
     seasonal = mock_outbreaks(city_name, country)
 
     # Avoid duplicating diseases already covered by WHO

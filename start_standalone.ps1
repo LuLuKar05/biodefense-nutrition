@@ -32,7 +32,7 @@ Start-Sleep -Seconds 2
 
 # ── Start Layer 3 ──
 Write-Host "[2/3] Starting Layer 3 — Threat Backend (port 8100)..." -ForegroundColor Yellow
-$layer3 = Start-Process -FilePath "python" -ArgumentList "-m", "threat_backend" `
+ $layer3 = Start-Process -FilePath "python" -ArgumentList "-m", "server" `
     -WorkingDirectory $PSScriptRoot `
     -PassThru -WindowStyle Normal
 Write-Host "  PID: $($layer3.Id)" -ForegroundColor DarkGray

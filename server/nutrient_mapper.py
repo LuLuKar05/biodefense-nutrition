@@ -298,7 +298,7 @@ def map_threat_to_nutrients(
         threat: A threat dict with 'type', 'name', 'pathogen_type', etc.
         research_results: Optional dict of disease_title_lower → research agent results.
     """
-    from threat_backend.outbreak_fetcher import extract_disease_key
+    from server.outbreak_fetcher import extract_disease_key
 
     # Air quality uses its own category
     if threat.get("type") == "air_quality":

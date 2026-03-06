@@ -1,7 +1,7 @@
 """
-research_agent.py — Biodefence Researcher Agent (Real Amina CLI Integration)
-=============================================================================
-The single "ResearcherAgent" that owns the ENTIRE unknown-disease pipeline.
+research_pipeline.py — Biodefence Research Pipeline (Real Amina CLI Integration)
+===============================================================================
+The single pipeline that owns the ENTIRE unknown-disease workflow.
 
 When a disease detected by WHO is NOT in our static disease_nutrition_db,
 this agent runs the full bioinformatics + AI pipeline:
@@ -70,7 +70,7 @@ import httpx
 from dotenv import load_dotenv
 
 # ── Imports from amina_ai (core bioinformatics engine) ──
-from threat_backend.amina_ai import (
+from server.amina_ai import (
     analyse_protein,
     score_compounds_against_protein,
 )
@@ -89,7 +89,7 @@ try:
 except ImportError:
     AMINA_CLI_AVAILABLE = False
 
-log = logging.getLogger("threat_backend.research_agent")
+log = logging.getLogger("server.research_pipeline")
 
 # ── Config ──────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent

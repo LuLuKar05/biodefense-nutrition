@@ -12,7 +12,7 @@ from pathlib import Path
 # Add project root
 sys.path.insert(0, str(Path(__file__).parent))
 
-from threat_backend.research_agent import (
+from server.research_pipeline import (
     predict_structure,
     dock_phytochemicals,
     ensure_amina_auth,

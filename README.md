@@ -37,6 +37,7 @@ Threat Intelligence Backend (:8100) ── zero-knowledge API
 | 1 | OpenClaw Gateway | Message routing only |
 | 2 | Agent Orchestrator | User profiles (local only, never leaves device) |
 | 3 | Threat Backend | Public data only — **zero user data** |
+| 3 | Threat Intelligence Server | Public data only — **zero user data** |
 
 ---
 
@@ -142,9 +143,9 @@ OpenClawHack/
 │       ├── validators.py       #     Input validation
 │       └── circuit_breaker.py  #     Fault tolerance
 │
-├── threat_backend/             # Layer 3 — Threat intelligence
-│   ├── server.py               #   FastAPI endpoints
-│   ├── research_agent.py       #   Full bioinformatics pipeline
+├── server/                     # Layer 3 — Threat Intelligence Server
+│   ├── app.py                  #   FastAPI endpoints
+│   ├── research_pipeline.py    #   Full bioinformatics pipeline
 │   ├── amina_ai.py             #   Amino acid analysis engine
 │   ├── outbreak_fetcher.py     #   WHO DON integration
 │   ├── outbreak_mock.py        #   Simulated outbreak data
@@ -153,7 +154,10 @@ OpenClawHack/
 │   ├── aqi_fetcher.py          #   Air quality data
 │   └── cities.py               #   UK city database
 │
-├── gateway_bridge.py           # OpenClaw ↔ Orchestrator bridge
+├── gateway/                    # Layer 1 — OpenClaw Gateway & Bridge
+│   ├── bridge.py               #   OpenClaw ↔ Orchestrator bridge
+│   ├── openclaw.json           #   OpenClaw config
+│   └── workspace/              #   OpenClaw workspace files
 │
 ├── data/                       # Runtime data (gitignored)
 │   ├── phytochemicals.json     #   15-compound library with SMILES
@@ -166,7 +170,7 @@ OpenClawHack/
 │
 ├── dashboard/                  # Next.js system dashboard
 ├── backend/                    # Docker backend (Celery workers)
-├── openclaw/                   # OpenClaw gateway config
+    # (openclaw/ now inside gateway/)
 ├── tests/                      # Test suite
 │
 ├── .env.example                # Environment template

@@ -45,7 +45,7 @@ Write-Host "  Done." -ForegroundColor DarkGray
 # ── Start Layer 3: Threat Intelligence Backend ──
 Write-Host ""
 Write-Host "[2/4] Starting Layer 3 — Threat Intelligence Backend (port 8100)..." -ForegroundColor Yellow
-$layer3 = Start-Process -FilePath "python" -ArgumentList "-m", "threat_backend" `
+ $layer3 = Start-Process -FilePath "python" -ArgumentList "-m", "server" `
     -WorkingDirectory $PSScriptRoot `
     -PassThru -WindowStyle Normal
 Write-Host "  PID: $($layer3.Id)" -ForegroundColor DarkGray
@@ -54,7 +54,7 @@ Start-Sleep -Seconds 3
 # ── Start Gateway Bridge ──
 Write-Host ""
 Write-Host "[3/4] Starting Gateway Bridge (port 18790)..." -ForegroundColor Yellow
-$bridge = Start-Process -FilePath "python" -ArgumentList "gateway_bridge.py" `
+ $bridge = Start-Process -FilePath "python" -ArgumentList "gateway/bridge.py" `
     -WorkingDirectory $PSScriptRoot `
     -PassThru -WindowStyle Normal
 Write-Host "  PID: $($bridge.Id)" -ForegroundColor DarkGray
@@ -73,13 +73,13 @@ if (-not $openclawPath) {
     Write-Host ""
     Write-Host "  Layer 3 and Gateway Bridge are running." -ForegroundColor Yellow
     Write-Host "  You can start OpenClaw manually:" -ForegroundColor Yellow
-    Write-Host "    cd openclaw" -ForegroundColor White
+    Write-Host "    cd gateway" -ForegroundColor White
     Write-Host "    openclaw gateway --port 18789 --verbose" -ForegroundColor White
     Write-Host ""
 } else {
     $gateway = Start-Process -FilePath "openclaw" `
         -ArgumentList "gateway", "--port", "18789", "--verbose" `
-        -WorkingDirectory (Join-Path $PSScriptRoot "openclaw") `
+        -WorkingDirectory (Join-Path $PSScriptRoot "gateway") `
         -PassThru -WindowStyle Normal
     Write-Host "  PID: $($gateway.Id)" -ForegroundColor DarkGray
 }

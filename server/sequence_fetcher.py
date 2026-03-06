@@ -258,7 +258,7 @@ async def fetch_sequences_for_outbreaks(
     Returns:
         {disease_key: SequenceResult, ...}
     """
-    from threat_backend.outbreak_fetcher import extract_disease_key
+    from server.outbreak_fetcher import extract_disease_key
 
     # Collect unique disease keys that have NCBI search terms
     to_fetch: dict[str, str] = {}  # disease_key → search_term

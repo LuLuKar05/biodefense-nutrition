@@ -1,6 +1,6 @@
 """
-server.py — Threat Intelligence FastAPI Backend (Layer 3)
-=========================================================
+app.py — Threat Intelligence FastAPI Backend (Layer 3)
+======================================================
 Fully autonomous microservice that:
   1. Fetches AQI + outbreak data for 25 UK cities every hour
   2. Runs Amina AI protein analysis for unknown diseases
@@ -17,7 +17,7 @@ Architecture:
   and receive proactive alerts when threats change.
 
 Run: python -m threat_backend
-  or: uvicorn threat_backend.server:app --port 8100
+    or: uvicorn server.app:app --port 8100
 """
 from __future__ import annotations
 
@@ -35,23 +35,23 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from threat_backend.cities import CITIES, find_city, all_city_names
-from threat_backend.aqi_fetcher import fetch_aqi
-from threat_backend.outbreak_fetcher import (
+from server.cities import CITIES, find_city, all_city_names
+from server.aqi_fetcher import fetch_aqi
+from server.outbreak_fetcher import (
     generate_outbreaks_from_who,
     get_who_cache_info,
     extract_disease_key,
 )
-from threat_backend.nutrient_mapper import (
+from server.nutrient_mapper import (
     map_all_threats,
     get_priority_foods,
     get_disease_db,
 )
-from threat_backend.sequence_fetcher import (
+from server.sequence_fetcher import (
     fetch_protein_sequence,
     get_sequence_cache_info,
 )
-from threat_backend.research_agent import (
+from server.research_pipeline import (
     research_unknown_disease,
     get_research_cache_info,
     amina_cli_pipeline,
@@ -67,7 +67,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="  [%(levelname)s] %(name)s: %(message)s",
 )
-log = logging.getLogger("threat_backend")
+log = logging.getLogger("server")
 
 # ── Config ──────────────────────────────────────────────────
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -1,0 +1,485 @@
+{
+  "meta": {
+    "version": "2.0",
+    "description": "Disease-specific nutritional intelligence database. Maps diseases to specific protective compounds, mechanisms of action, and evidence-based nutritional strategies. Used by the hybrid pipeline: known diseases use this static DB, unknown diseases trigger the research agent.",
+    "sources": "PubMed, WHO fact sheets, peer-reviewed nutrition/immunology literature"
+  },
+  "diseases": {
+    "influenza": {
+      "display_name": "Influenza (Flu)",
+      "pathogen_type": "virus",
+      "family": "Orthomyxoviridae",
+      "key_proteins": ["Hemagglutinin (HA)", "Neuraminidase (NA)"],
+      "ncbi_search_term": "influenza A virus hemagglutinin",
+      "transmission": "Respiratory droplets, aerosol",
+      "nutrition_strategy": {
+        "primary_goal": "Immune modulation, reduce viral replication, anti-inflammatory airway support",
+        "compounds": [
+          {
+            "name": "Quercetin",
+            "mechanism": "Inhibits viral neuraminidase activity; reduces inflammatory cytokines IL-6, TNF-α",
+            "evidence": "In vitro studies show quercetin inhibits influenza A replication (Choi et al., 2009, J Sci Food Agric)"
+          },
+          {
+            "name": "Allicin",
+            "mechanism": "Broad-spectrum antiviral; enhances NK cell activity against infected cells",
+            "evidence": "Randomised trial showed garlic supplementation reduced cold/flu incidence by 63% (Josling, 2001, Adv Therapy)"
+          },
+          {
+            "name": "EGCG",
+            "mechanism": "Binds HA protein, blocking viral entry into host cells; antioxidant protection for lung tissue",
+            "evidence": "EGCG shown to inhibit influenza virus adsorption in MDCK cells (Song et al., 2005, Antiviral Res)"
+          },
+          {
+            "name": "Gingerol",
+            "mechanism": "Anti-inflammatory; reduces airway mucus secretion; mild antiviral activity",
+            "evidence": "6-gingerol inhibits rhinovirus replication in human airway cells (Chang et al., 2013)"
+          },
+          {
+            "name": "Sulforaphane",
+            "mechanism": "Activates Nrf2 antioxidant pathway; protects lung epithelium from viral-induced oxidative damage",
+            "evidence": "Broccoli sprout extract reduced influenza viral load in smokers (Noah et al., 2014, PLoS One)"
+          }
+        ],
+        "additional_nutrients": [
+          {"nutrient": "Vitamin D", "role": "Modulates adaptive immunity; deficiency linked to higher flu susceptibility", "food_sources": ["Fatty fish", "Egg yolks", "Fortified milk"]},
+          {"nutrient": "Zinc", "role": "Essential for T-cell function; inhibits viral RNA polymerase", "food_sources": ["Pumpkin seeds", "Beef", "Lentils"]},
+          {"nutrient": "Vitamin C", "role": "Supports neutrophil function; reduces duration of respiratory infections", "food_sources": ["Bell peppers", "Kiwi", "Citrus fruits"]},
+          {"nutrient": "N-Acetylcysteine (NAC)", "role": "Precursor to glutathione; thins mucus; reduces oxidative lung damage", "food_sources": ["High-protein foods (converted from cysteine)"]}
+        ],
+        "dietary_advice": [
+          "Eat raw crushed garlic daily — wait 10 min after crushing to maximise allicin",
+          "Drink 3+ cups green tea/day during flu season for EGCG protection",
+          "Add broccoli sprouts to salads — highest natural source of sulforaphane",
+          "Ensure adequate vitamin D, especially Oct–Mar in northern latitudes",
+          "Hot ginger-lemon-honey tea supports both hydration and anti-inflammatory pathways"
+        ]
+      }
+    },
+    "mpox": {
+      "display_name": "Mpox (Monkeypox)",
+      "pathogen_type": "virus",
+      "family": "Poxviridae",
+      "key_proteins": ["H3L surface protein", "A33R membrane protein", "B5R complement control"],
+      "ncbi_search_term": "monkeypox virus surface protein",
+      "transmission": "Close contact, respiratory secretions, contaminated materials",
+      "nutrition_strategy": {
+        "primary_goal": "Immune support, skin barrier integrity, anti-inflammatory, antiviral activity",
+        "compounds": [
+          {
+            "name": "Curcumin",
+            "mechanism": "Inhibits NF-κB pathway; reduces viral replication in poxvirus family; anti-inflammatory for skin lesions",
+            "evidence": "Curcumin shown to inhibit vaccinia virus (poxvirus) replication (Kim et al., 2020)"
+          },
+          {
+            "name": "Quercetin",
+            "mechanism": "Antiviral via interference with viral entry; supports T-cell mediated immunity",
+            "evidence": "Quercetin inhibits multiple DNA viruses including poxviruses in cell culture models"
+          },
+          {
+            "name": "Resveratrol",
+            "mechanism": "Activates SIRT1 for immune regulation; anti-inflammatory for skin manifestations",
+            "evidence": "Resveratrol inhibits vaccinia virus through interference with viral DNA replication (Docherty et al., 2006)"
+          },
+          {
+            "name": "EGCG",
+            "mechanism": "Broad-spectrum antiviral; supports interferon response against DNA viruses",
+            "evidence": "Green tea catechins enhance innate antiviral immunity (Steinmann et al., 2013)"
+          }
+        ],
+        "additional_nutrients": [
+          {"nutrient": "Vitamin A", "role": "Critical for skin barrier integrity and mucosal immune defence", "food_sources": ["Sweet potato", "Carrots", "Liver"]},
+          {"nutrient": "Zinc", "role": "Required for T-cell development; supports skin wound healing", "food_sources": ["Pumpkin seeds", "Chickpeas", "Cashews"]},
+          {"nutrient": "Lysine", "role": "Amino acid that inhibits viral replication in some DNA viruses; supports collagen for skin repair", "food_sources": ["Fish", "Chicken", "Eggs", "Soy"]},
+          {"nutrient": "Vitamin E", "role": "Lipid-soluble antioxidant; protects skin cells from oxidative damage", "food_sources": ["Almonds", "Sunflower seeds", "Avocado"]}
+        ],
+        "dietary_advice": [
+          "Prioritise vitamin A-rich foods for skin barrier protection (orange/yellow vegetables)",
+          "Daily turmeric with black pepper — piperine increases curcumin absorption by 2000%",
+          "Zinc-rich foods support both immune function and skin healing",
+          "Lysine-rich proteins (fish, eggs) may inhibit poxvirus DNA replication",
+          "Maintain hydration and anti-inflammatory diet to support recovery"
+        ]
+      }
+    },
+    "covid": {
+      "display_name": "COVID-19 (SARS-CoV-2)",
+      "pathogen_type": "virus",
+      "family": "Coronaviridae",
+      "key_proteins": ["Spike (S) protein", "3CLpro main protease", "RdRp"],
+      "ncbi_search_term": "SARS-CoV-2 spike protein",
+      "transmission": "Airborne, respiratory droplets",
+      "nutrition_strategy": {
+        "primary_goal": "Block viral entry via ACE2, reduce cytokine storm, protect lung tissue",
+        "compounds": [
+          {
+            "name": "Quercetin",
+            "mechanism": "Computational and in vitro evidence suggests binding to SARS-CoV-2 3CLpro; reduces ACE2 expression",
+            "evidence": "Quercetin identified as potential 3CLpro inhibitor (Abian et al., 2020, Int J Biol Macromol)"
+          },
+          {
+            "name": "EGCG",
+            "mechanism": "Inhibits SARS-CoV-2 3CLpro; blocks Spike-ACE2 interaction at high concentrations",
+            "evidence": "EGCG inhibits SARS-CoV-2 main protease (Jang et al., 2020, Proc Natl Acad Sci)"
+          },
+          {
+            "name": "Curcumin",
+            "mechanism": "Anti-inflammatory; modulates cytokine storm (IL-6, TNF-α); potential Spike protein binding",
+            "evidence": "Curcumin reduced ICU admission in COVID patients in randomised trial (Valizadeh et al., 2020)"
+          },
+          {
+            "name": "Sulforaphane",
+            "mechanism": "Activates Nrf2 pathway; protects against SARS-CoV-2-induced oxidative stress in lungs",
+            "evidence": "Sulforaphane inhibited SARS-CoV-2 replication in vitro and in vivo (Ordonez et al., 2022, Mol Biol Cell)"
+          },
+          {
+            "name": "Allicin",
+            "mechanism": "Immunomodulatory; enhances NK cell and macrophage activity",
+            "evidence": "Garlic organosulfur compounds show potential anti-SARS-CoV-2 activity (Thuy et al., 2020)"
+          }
+        ],
+        "additional_nutrients": [
+          {"nutrient": "Vitamin D", "role": "Modulates inflammatory response; reduces cytokine storm risk; deficiency linked to severe COVID", "food_sources": ["Fatty fish", "Mushrooms (UV-exposed)", "Fortified foods"]},
+          {"nutrient": "Zinc", "role": "Inhibits RdRp (RNA polymerase); ionophore combination with quercetin enhances intracellular zinc", "food_sources": ["Oysters", "Pumpkin seeds", "Beef"]},
+          {"nutrient": "Omega-3 fatty acids", "role": "SPM (specialised pro-resolving mediators) help resolve lung inflammation", "food_sources": ["Salmon", "Sardines", "Walnuts", "Flaxseed"]},
+          {"nutrient": "Selenium", "role": "GPx antioxidant enzyme cofactor; deficiency linked to worse COVID outcomes", "food_sources": ["Brazil nuts (1-2/day)", "Tuna", "Eggs"]}
+        ],
+        "dietary_advice": [
+          "Quercetin + zinc combo — quercetin acts as zinc ionophore, driving zinc into cells to inhibit viral replication",
+          "Eat fatty fish 2-3x/week for omega-3 SPMs that help resolve lung inflammation",
+          "Just 2 Brazil nuts/day provides sufficient selenium",
+          "Broccoli sprouts daily for Nrf2-activated lung protection",
+          "Anti-inflammatory Mediterranean-style diet pattern reduces severe outcome risk"
+        ]
+      }
+    },
+    "ebola": {
+      "display_name": "Ebola Virus Disease",
+      "pathogen_type": "virus",
+      "family": "Filoviridae",
+      "key_proteins": ["Glycoprotein (GP)", "VP40 matrix protein"],
+      "ncbi_search_term": "Ebola virus glycoprotein",
+      "transmission": "Direct contact with blood/body fluids",
+      "nutrition_strategy": {
+        "primary_goal": "Immune support, fluid/electrolyte balance, antioxidant protection against haemorrhagic damage",
+        "compounds": [
+          {
+            "name": "Curcumin",
+            "mechanism": "Potent anti-inflammatory; may reduce endothelial damage in haemorrhagic fever",
+            "evidence": "Curcumin modulates vascular inflammation pathways relevant to viral haemorrhagic fevers"
+          },
+          {
+            "name": "Resveratrol",
+            "mechanism": "Protects endothelial cells; activates SIRT1 for cellular stress resistance",
+            "evidence": "Resveratrol shown to protect against vascular permeability in inflammatory models"
+          },
+          {
+            "name": "Quercetin",
+            "mechanism": "Stabilises mast cells; reduces vascular permeability; broad antiviral",
+            "evidence": "Quercetin's mast cell stabilisation relevant to reducing haemorrhagic complications"
+          },
+          {
+            "name": "EGCG",
+            "mechanism": "Antioxidant protection; supports immune cell function under oxidative stress",
+            "evidence": "EGCG supports endothelial barrier function (Kim et al., 2014)"
+          }
+        ],
+        "additional_nutrients": [
+          {"nutrient": "Electrolytes (Na, K, Mg)", "role": "Critical for managing fluid loss in haemorrhagic fever", "food_sources": ["ORS solution", "Bananas", "Coconut water"]},
+          {"nutrient": "Vitamin C", "role": "Supports vascular integrity; antioxidant against oxidative burst", "food_sources": ["Bell peppers", "Kiwi", "Citrus"]},
+          {"nutrient": "Iron", "role": "Replenish blood loss — but avoid excess as pathogens exploit free iron", "food_sources": ["Lentils with vitamin C", "Spinach"]},
+          {"nutrient": "Protein", "role": "High-quality protein for tissue repair and immune cell production", "food_sources": ["Eggs", "Fish", "Legumes"]}
+        ],
+        "dietary_advice": [
+          "Hydration is the MOST critical factor — oral rehydration solutions if available",
+          "Anti-inflammatory foods to reduce vascular damage (turmeric, berries, omega-3)",
+          "Protein-rich foods for immune system rebuilding",
+          "Vitamin C-rich foods to support blood vessel integrity",
+          "NOTE: Nutrition is supportive only — Ebola REQUIRES medical treatment"
+        ]
+      }
+    },
+    "cholera": {
+      "display_name": "Cholera",
+      "pathogen_type": "bacteria",
+      "family": "Vibrionaceae",
+      "key_proteins": ["Cholera toxin (CT)", "TCP pilus"],
+      "ncbi_search_term": "Vibrio cholerae cholera toxin",
+      "transmission": "Contaminated water/food",
+      "nutrition_strategy": {
+        "primary_goal": "Rehydration, gut barrier restoration, antimicrobial support",
+        "compounds": [
+          {
+            "name": "Allicin",
+            "mechanism": "Antimicrobial against Vibrio species; supports gut microbiome balance",
+            "evidence": "Garlic extract showed inhibitory activity against Vibrio cholerae (Eja et al., 2007)"
+          },
+          {
+            "name": "Gingerol",
+            "mechanism": "Anti-emetic; reduces gut inflammation; mild antimicrobial",
+            "evidence": "Ginger reduces severity of cholera toxin-induced diarrheal response in animal models"
+          },
+          {
+            "name": "EGCG",
+            "mechanism": "Supports gut epithelial barrier; antimicrobial activity against gram-negative bacteria",
+            "evidence": "Green tea polyphenols show activity against enteric pathogens (Friedman, 2007)"
+          }
+        ],
+        "additional_nutrients": [
+          {"nutrient": "Electrolytes (ORS)", "role": "CRITICAL — cholera causes severe dehydration; WHO-ORS formula is primary treatment", "food_sources": ["ORS packets", "Rice water with salt", "Coconut water"]},
+          {"nutrient": "Zinc", "role": "Reduces duration and severity of diarrhoea by 25%; WHO-recommended", "food_sources": ["Pumpkin seeds", "Supplementation recommended"]},
+          {"nutrient": "Probiotics", "role": "Restore gut microbiome after Vibrio displacement", "food_sources": ["Yoghurt", "Kefir", "Fermented vegetables"]},
+          {"nutrient": "Vitamin A", "role": "Supports intestinal mucosal repair", "food_sources": ["Sweet potato", "Carrots", "Mango"]}
+        ],
+        "dietary_advice": [
+          "CRITICAL: Oral Rehydration Solution is the primary life-saving intervention",
+          "Zinc supplementation reduces diarrhoea duration by ~25% (WHO protocol)",
+          "Once tolerating food: rice porridge, bananas, boiled potatoes (BRAT-like diet)",
+          "Probiotic foods (yoghurt, kefir) to help restore gut flora after recovery",
+          "Ginger tea for anti-nausea support alongside rehydration"
+        ]
+      }
+    },
+    "measles": {
+      "display_name": "Measles",
+      "pathogen_type": "virus",
+      "family": "Paramyxoviridae",
+      "key_proteins": ["Hemagglutinin (H)", "Fusion (F) protein"],
+      "ncbi_search_term": "measles virus hemagglutinin protein",
+      "transmission": "Airborne (highly contagious)",
+      "nutrition_strategy": {
+        "primary_goal": "Immune recovery, vitamin A repletion, reduce complications",
+        "compounds": [
+          {
+            "name": "Quercetin",
+            "mechanism": "Antiviral and anti-inflammatory; supports immune recovery",
+            "evidence": "Flavonoids support immune function during viral infections"
+          },
+          {
+            "name": "Curcumin",
+            "mechanism": "Anti-inflammatory; reduces post-measles immune suppression effects",
+            "evidence": "Curcumin modulates immune recovery pathways"
+          }
+        ],
+        "additional_nutrients": [
+          {"nutrient": "Vitamin A", "role": "WHO-RECOMMENDED: Vitamin A supplementation reduces measles mortality by 50% in deficient populations", "food_sources": ["Liver", "Sweet potato", "Carrots", "Mango"]},
+          {"nutrient": "Zinc", "role": "Supports immune reconstitution after measles-induced immunosuppression", "food_sources": ["Pumpkin seeds", "Lentils", "Chickpeas"]},
+          {"nutrient": "Vitamin C", "role": "Supports immune cell function; helps reduce duration of complications", "food_sources": ["Bell peppers", "Strawberries", "Kiwi"]},
+          {"nutrient": "Protein", "role": "Essential for immune system rebuild — measles causes immune 'amnesia'", "food_sources": ["Eggs", "Fish", "Legumes", "Dairy"]}
+        ],
+        "dietary_advice": [
+          "Vitamin A supplementation is WHO-recommended for all measles cases in children",
+          "Orange/yellow fruits and vegetables daily for beta-carotene (provitamin A)",
+          "High-protein diet to support immune system recovery (measles causes 'immune amnesia')",
+          "Zinc-rich foods to help rebuild depleted immune cells",
+          "NOTE: VACCINATION is the primary prevention — nutrition is supportive"
+        ]
+      }
+    },
+    "dengue": {
+      "display_name": "Dengue Fever",
+      "pathogen_type": "virus",
+      "family": "Flaviviridae",
+      "key_proteins": ["Envelope (E) protein", "NS1", "NS3 protease"],
+      "ncbi_search_term": "dengue virus envelope protein",
+      "transmission": "Aedes mosquito bite",
+      "nutrition_strategy": {
+        "primary_goal": "Platelet support, prevent haemorrhagic progression, fluid balance",
+        "compounds": [
+          {
+            "name": "Quercetin",
+            "mechanism": "Inhibits NS2B-NS3 protease; may reduce viral replication; supports platelet count",
+            "evidence": "Quercetin identified as dengue NS3 protease inhibitor (Senthilvel et al., 2013)"
+          },
+          {
+            "name": "Curcumin",
+            "mechanism": "Anti-inflammatory; reduces vascular permeability in dengue haemorrhagic fever",
+            "evidence": "Curcumin modulates dengue-relevant inflammatory pathways (Padilla-S et al., 2014)"
+          },
+          {
+            "name": "EGCG",
+            "mechanism": "Inhibits dengue virus entry; antioxidant protection",
+            "evidence": "EGCG shown to inhibit dengue virus in cell culture (Carneiro et al., 2016)"
+          }
+        ],
+        "additional_nutrients": [
+          {"nutrient": "Papaya leaf extract", "role": "Clinical evidence for increasing platelet count in dengue", "food_sources": ["Fresh papaya leaf juice (traditional remedy with emerging evidence)"]},
+          {"nutrient": "Vitamin C", "role": "Supports capillary integrity; antioxidant during viraemia", "food_sources": ["Guava", "Bell peppers", "Kiwi"]},
+          {"nutrient": "Iron + Folate", "role": "Support blood cell production if platelet/RBC counts drop", "food_sources": ["Lentils", "Spinach with lemon"]},
+          {"nutrient": "Fluids", "role": "Preventing dehydration is critical in dengue management", "food_sources": ["ORS", "Coconut water", "Clear soups"]}
+        ],
+        "dietary_advice": [
+          "Papaya leaf juice has clinical evidence for boosting platelet count — traditional but supported",
+          "Stay VERY well hydrated — dehydration worsens dengue complications",
+          "Avoid aspirin/NSAIDs (increase bleeding risk) — nutrition support is key",
+          "Vitamin C-rich fruits for capillary integrity",
+          "NOTE: Monitor platelet count — seek medical care for dengue warning signs"
+        ]
+      }
+    },
+    "nipah": {
+      "display_name": "Nipah Virus Infection",
+      "pathogen_type": "virus",
+      "family": "Paramyxoviridae",
+      "key_proteins": ["Attachment glycoprotein (G)", "Fusion protein (F)"],
+      "ncbi_search_term": "Nipah virus glycoprotein",
+      "transmission": "Bat-to-human, human-to-human via respiratory secretions",
+      "nutrition_strategy": {
+        "primary_goal": "Immune support, neuroprotection (Nipah causes encephalitis), anti-inflammatory",
+        "compounds": [
+          {
+            "name": "Curcumin",
+            "mechanism": "Neuroprotective; crosses blood-brain barrier; anti-inflammatory for encephalitis",
+            "evidence": "Curcumin's neuroprotective properties well-documented in multiple neuroinflammatory models"
+          },
+          {
+            "name": "Resveratrol",
+            "mechanism": "Neuroprotective; activates SIRT1; reduces neuroinflammation",
+            "evidence": "Resveratrol protects against viral encephalitis in animal models (Berardi et al., 2011)"
+          },
+          {
+            "name": "EGCG",
+            "mechanism": "Crosses blood-brain barrier; antioxidant neuroprotection; broad antiviral",
+            "evidence": "EGCG shown to have neuroprotective effects in multiple viral encephalitis models"
+          }
+        ],
+        "additional_nutrients": [
+          {"nutrient": "Omega-3 DHA", "role": "Critical for brain cell membrane integrity; anti-neuroinflammatory", "food_sources": ["Salmon", "Mackerel", "Algae supplements"]},
+          {"nutrient": "Vitamin E", "role": "Lipid-soluble antioxidant protecting neural tissue", "food_sources": ["Almonds", "Sunflower seeds", "Avocado"]},
+          {"nutrient": "B-vitamins (B6, B12, Folate)", "role": "Support neurological function and repair", "food_sources": ["Eggs", "Nutritional yeast", "Leafy greens"]}
+        ],
+        "dietary_advice": [
+          "Focus on neuroprotective foods — Nipah causes encephalitis (brain inflammation)",
+          "Omega-3 rich fish 3x/week for brain-protective DHA",
+          "Turmeric with black pepper for bioavailable curcumin reaching the brain",
+          "AVOID raw date palm sap (primary transmission route in Bangladesh)",
+          "NOTE: No approved treatment exists — supportive care + nutrition is key"
+        ]
+      }
+    },
+    "marburg": {
+      "display_name": "Marburg Virus Disease",
+      "pathogen_type": "virus",
+      "family": "Filoviridae",
+      "key_proteins": ["Glycoprotein (GP)", "VP40"],
+      "ncbi_search_term": "Marburg virus glycoprotein",
+      "transmission": "Fruit bats, then human-to-human via body fluids",
+      "nutrition_strategy": {
+        "primary_goal": "Same as Ebola — vascular protection, rehydration, immune support",
+        "compounds": [
+          {
+            "name": "Curcumin",
+            "mechanism": "Anti-inflammatory; vascular protective in haemorrhagic conditions",
+            "evidence": "Curcumin protects endothelial function under inflammatory stress"
+          },
+          {
+            "name": "Quercetin",
+            "mechanism": "Stabilises vascular permeability; broad antiviral properties",
+            "evidence": "Quercetin reduces vascular leakage in inflammatory models"
+          },
+          {
+            "name": "Resveratrol",
+            "mechanism": "Endothelial protection; SIRT1-mediated cellular stress resistance",
+            "evidence": "Resveratrol protects vascular barrier function"
+          }
+        ],
+        "additional_nutrients": [
+          {"nutrient": "Electrolytes", "role": "Critical rehydration for haemorrhagic fluid loss", "food_sources": ["ORS solution", "Coconut water"]},
+          {"nutrient": "Vitamin C", "role": "Vascular integrity and collagen support", "food_sources": ["Bell peppers", "Citrus", "Kiwi"]},
+          {"nutrient": "Vitamin K", "role": "Supports blood clotting factors (relevant in haemorrhagic disease)", "food_sources": ["Kale", "Spinach", "Broccoli"]}
+        ],
+        "dietary_advice": [
+          "Rehydration is CRITICAL — similar protocol to Ebola",
+          "Vitamin K-rich greens may support clotting factor production",
+          "Anti-inflammatory diet to reduce vascular damage",
+          "High-protein for immune rebuilding during recovery",
+          "NOTE: Marburg has up to 88% fatality — REQUIRES immediate medical care"
+        ]
+      }
+    },
+    "norovirus": {
+      "display_name": "Norovirus Gastroenteritis",
+      "pathogen_type": "virus",
+      "family": "Caliciviridae",
+      "key_proteins": ["VP1 capsid protein"],
+      "ncbi_search_term": "norovirus VP1 capsid protein",
+      "transmission": "Faecal-oral, contaminated food/surfaces",
+      "nutrition_strategy": {
+        "primary_goal": "Gut recovery, rehydration, antimicrobial support, microbiome restoration",
+        "compounds": [
+          {
+            "name": "Gingerol",
+            "mechanism": "Potent anti-emetic; reduces nausea via 5-HT3 receptor antagonism; anti-inflammatory for gut",
+            "evidence": "Ginger is evidence-based anti-emetic (Ernst & Pittler, 2000, Br J Anaesth)"
+          },
+          {
+            "name": "Allicin",
+            "mechanism": "Antimicrobial; supports gut flora balance during infection",
+            "evidence": "Garlic compounds show broad antimicrobial activity in gut"
+          },
+          {
+            "name": "EGCG",
+            "mechanism": "Supports gut epithelial barrier repair; antimicrobial",
+            "evidence": "EGCG strengthens intestinal tight junctions (Watson et al., 2004)"
+          }
+        ],
+        "additional_nutrients": [
+          {"nutrient": "Electrolytes", "role": "Replace fluid loss from vomiting/diarrhoea", "food_sources": ["ORS", "Clear broth", "Coconut water"]},
+          {"nutrient": "Probiotics", "role": "Restore gut microbiome displaced by viral infection", "food_sources": ["Live yoghurt", "Kefir", "Sauerkraut (once tolerating food)"]},
+          {"nutrient": "Zinc", "role": "Reduces duration of diarrhoeal disease (WHO recommendation)", "food_sources": ["Pumpkin seeds", "Rice with lentils"]}
+        ],
+        "dietary_advice": [
+          "First 24h: Clear fluids only — ORS, clear broth, diluted apple juice",
+          "Ginger tea for nausea relief (evidence-based anti-emetic)",
+          "BRAT diet when ready: Bananas, Rice, Applesauce, Toast",
+          "Live yoghurt after 48h to begin microbiome restoration",
+          "Avoid dairy (except yoghurt), fatty foods, caffeine for 3-5 days"
+        ]
+      }
+    },
+    "mers": {
+      "display_name": "MERS-CoV",
+      "pathogen_type": "virus",
+      "family": "Coronaviridae",
+      "key_proteins": ["Spike (S) protein", "DPP4 receptor binding domain"],
+      "ncbi_search_term": "MERS coronavirus spike protein",
+      "transmission": "Camel-to-human, limited human-to-human",
+      "nutrition_strategy": {
+        "primary_goal": "Block DPP4-mediated viral entry, immune modulation, lung protection",
+        "compounds": [
+          {
+            "name": "Quercetin",
+            "mechanism": "May interfere with coronavirus Spike-receptor binding; anti-inflammatory",
+            "evidence": "Flavonoids show anti-coronavirus activity across CoV family"
+          },
+          {
+            "name": "EGCG",
+            "mechanism": "Inhibits coronavirus proteases; protects lung epithelium",
+            "evidence": "EGCG shows activity against multiple coronaviruses"
+          },
+          {
+            "name": "Curcumin",
+            "mechanism": "Anti-inflammatory; reduces lung fibrosis risk from severe pneumonia",
+            "evidence": "Curcumin modulates pulmonary fibrosis pathways (Mohanty et al., 2018)"
+          },
+          {
+            "name": "Sulforaphane",
+            "mechanism": "Nrf2-mediated lung protection; reduces oxidative damage",
+            "evidence": "Sulforaphane protects respiratory epithelium in infection models"
+          }
+        ],
+        "additional_nutrients": [
+          {"nutrient": "Vitamin D", "role": "Immune modulation; reduces severe pneumonia risk", "food_sources": ["Fatty fish", "Egg yolks", "Sunlight exposure"]},
+          {"nutrient": "Selenium", "role": "Supports GPx antioxidant system in lungs", "food_sources": ["Brazil nuts", "Tuna", "Eggs"]}
+        ],
+        "dietary_advice": [
+          "Similar protocol to COVID-19 — both are coronaviruses targeting respiratory system",
+          "Quercetin + zinc combination for antiviral synergy",
+          "Green tea and broccoli sprouts for lung tissue protection",
+          "Mediterranean-style anti-inflammatory diet pattern",
+          "NOTE: MERS has ~36% fatality rate — immediate medical care essential"
+        ]
+      }
+    }
+  }
+}

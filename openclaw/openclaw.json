@@ -5,6 +5,9 @@
   // Start:  openclaw gateway --port 18789 --verbose
 
   // ── Agent ──
+  // In Option B mode, OpenClaw acts as a message router.
+  // All messages are forwarded to our Python orchestrator via hooks.
+  // No built-in LLM agent needed — our orchestrator handles everything.
   "agent": {
     "model": "anthropic/claude-sonnet-4-20250514",
     "skipBootstrap": true
@@ -80,12 +83,16 @@
     // "mattermost": { "allowFrom": ["*"] },
   },
 
-  // ── Webhook endpoint for proactive alerts ──
-  // Celery workers POST threat alerts here → pushed to all connected channels.
+  // ── Webhook endpoint for proactive alerts & message routing ──
+  // Gateway Bridge (Python FastAPI on port 18790) handles:
+  //   - Receiving user messages from OpenClaw (POST /hooks/agent)
+  //   - Receiving threat alerts from Layer 3 (POST /threat-alert)
+  //   - Pushing proactive alerts back to channels via OpenClaw
   // Token from env: OPENCLAW_HOOKS_TOKEN
   "hooks": {
     "enabled": true,
-    "path": "/hooks"
+    "path": "/hooks",
+    "url": "http://localhost:18790/hooks/agent"
   },
 
   // ── Browser (for WebChat UI) ──

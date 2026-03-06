@@ -1,0 +1,26 @@
+# ═══════════════════════════════════════════════════════════
+# Biodefense Nutrition — Python Dependencies
+# ═══════════════════════════════════════════════════════════
+# Install:  pip install -r requirements.txt
+# Python:   3.12+
+
+# ── Core Framework ──
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.34,<1.0
+pydantic>=2.0,<3.0
+
+# ── HTTP Client ──
+httpx>=0.28,<1.0
+
+# ── Environment ──
+python-dotenv>=1.0,<2.0
+
+# ── Amina CLI (cloud GPU protein tools) ──
+# Real protein folding (ESMFold), docking (DiffDock), binding site
+# prediction (P2Rank), structure analysis (SASA), and more.
+# Get API key: https://app.aminoanalytica.com/settings/api
+amina-cli>=0.2.5
+
+# ── Testing ──
+pytest>=8.0
+pytest-asyncio>=0.24

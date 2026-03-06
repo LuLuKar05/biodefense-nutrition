@@ -13,6 +13,7 @@ build/
 .venv/
 venv/
 env/
+.pytest_cache/
 
 # Node / Next.js
 node_modules/
@@ -33,8 +34,19 @@ Thumbs.db
 # Docker
 docker-compose.override.yml
 
-# Data caches (generated at runtime)
+# Data — runtime caches (regenerated on demand)
 data/pdb_cache/
+data/structures/
+data/analysis/
+data/docking_results/
+
+# Data — user profiles (local only, never commit)
+data/profiles/
+data/meals/
+data/threat_cache/
+
+# Amina CLI credentials (stored by amina auth set-key)
+.amina/
 
 # Logs
 *.log

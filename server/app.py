@@ -37,6 +37,7 @@ from pydantic import BaseModel
 
 from server.cities import CITIES, find_city, all_city_names
 from server.aqi_fetcher import fetch_aqi
+from server.weather_fetcher import fetch_weather
 from server.outbreak_fetcher import (
     generate_outbreaks_from_who,
     get_who_cache_info,
@@ -82,6 +83,13 @@ _threat_fingerprints: dict[str, str] = {}        # city → hash of threat names
 _last_refresh: str = "never"
 _refresh_count: int = 0
 
+# Persistent cross-refresh caches — unchanged outbreaks skip
+# the expensive bio-pipeline (NCBI, Amina CLI, FLock LLM)
+_persistent_sequences: dict[str, Any] = {}       # title_lower → NCBI sequence data
+_persistent_research: dict[str, Any] = {}         # title_lower → research/strategy result
+_persistent_amina: dict[str, Any] = {}            # title_lower → amina CLI analysis
+_prev_outbreak_fps: dict[str, str] = {}           # don_id → content fingerprint
+
 
 # ═════════════════════════════════════════════════════════════
 # SUBSCRIBER REGISTRY
@@ -123,6 +131,7 @@ def format_threat_report(data: dict[str, Any]) -> str:
     """
     city = data.get("city", "Unknown")
     aqi = data.get("aqi", {})
+    weather = data.get("weather", {})
     outbreaks = data.get("outbreaks", [])
     active_threats = data.get("active_threats", [])
     priority_foods = data.get("priority_foods", [])
@@ -131,6 +140,21 @@ def format_threat_report(data: dict[str, Any]) -> str:
     amina = data.get("amina_analyses", {})
 
     lines = [f"🛡 Threat Report: {city}", ""]
+
+    # ── Weather section ──
+    if weather.get("temp_c") is not None:
+        temp = weather["temp_c"]
+        feels = weather.get("feels_like_c", temp)
+        cond = weather.get("condition_detail", "")
+        humidity = weather.get("humidity", 0)
+        lines.append(f"🌡 Weather: {temp}°C (feels {feels}°C) — {cond}")
+        lines.append(f"  Humidity: {humidity}%")
+        env_threats = weather.get("environmental_threats", [])
+        for et in env_threats:
+            sev = et.get("severity", "low")
+            sev_emoji = {"low": "🟡", "moderate": "🟠", "high": "🔴"}.get(sev, "⚪")
+            lines.append(f"  {sev_emoji} {et['name']}: {et.get('description', '')}")
+        lines.append("")
 
     # ── AQI section ──
     aqi_idx = aqi.get("aqi_index", 0)
@@ -327,6 +351,17 @@ async def _fire_webhooks(changed_cities: list[str]) -> int:
     return delivered
 
 
+def _outbreak_content_fingerprint(ob: dict[str, Any]) -> str:
+    """Hash key content of a WHO outbreak for incremental change detection."""
+    raw = "|".join([
+        ob.get("don_id", ""),
+        ob.get("name", ""),
+        ob.get("who_advice", "")[:200],
+        ob.get("who_overview", "")[:200],
+    ])
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+
 # ═════════════════════════════════════════════════════════════
 # DATA REFRESH
 # ═════════════════════════════════════════════════════════════
@@ -342,19 +377,45 @@ async def refresh_all_cities() -> int:
       5. Change detection + webhook fire
     """
     global _last_refresh, _refresh_count
+    global _prev_outbreak_fps, _persistent_sequences, _persistent_research, _persistent_amina
     log.info(f"Refreshing threat data for {len(CITIES)} cities...")
 
     # ── Step 1: Get WHO outbreaks once (shared) ──
     sample_outbreaks = await generate_outbreaks_from_who(CITIES[0]["name"], CITIES[0]["country"])
+
+    # ── Step 1b: Incremental diff — identify new/changed outbreaks ──
+    current_fps: dict[str, str] = {}
+    changed_don_ids: set[str] = set()
+    for ob in sample_outbreaks:
+        don_id = ob.get("don_id", "") or ob.get("name", "")
+        fp = _outbreak_content_fingerprint(ob)
+        current_fps[don_id] = fp
+        if _prev_outbreak_fps.get(don_id) != fp:
+            changed_don_ids.add(don_id)
+    reused_count = len(sample_outbreaks) - len(changed_don_ids)
+    if reused_count and _refresh_count > 0:
+        log.info(f"  Incremental: {len(changed_don_ids)} new/changed, "
+                 f"{reused_count} unchanged (reusing cached results)")
+    _prev_outbreak_fps = current_fps
 
     # ── Step 2: Classify known vs unknown diseases ─────────
     # KNOWN diseases:  Use disease_nutrition_db.json directly
     #                  → no amino acid sequence, no structure prediction
     # UNKNOWN diseases: NCBI sequence → ESMFold → DiffDock → Amina CLI
     disease_db = get_disease_db()
-    sequences: dict[str, Any] = {}
-    research_results: dict[str, Any] = {}
-    amina_results: dict[str, Any] = {}
+    # Pre-populate from persistent caches so unchanged outbreaks reuse previous results
+    sequences: dict[str, Any] = dict(_persistent_sequences)
+    research_results: dict[str, Any] = dict(_persistent_research)
+    amina_results: dict[str, Any] = dict(_persistent_amina)
+
+    # Evict cached results for changed outbreaks so they get re-processed
+    for ob in sample_outbreaks:
+        don_id = ob.get("don_id", "") or ob.get("name", "")
+        if don_id in changed_don_ids:
+            title_lower = ob.get("name", "").lower().strip()
+            sequences.pop(title_lower, None)
+            research_results.pop(title_lower, None)
+            amina_results.pop(title_lower, None)
 
     known_count = 0
     unknown_count = 0
@@ -461,7 +522,13 @@ async def refresh_all_cities() -> int:
         except Exception as e:
             log.warning(f"Unknown disease pipeline failed for '{title}': {e}")
 
-    log.info(f"Pipeline summary: {known_count} known (DB), {unknown_count} unknown (Amina CLI)")
+    log.info(f"Pipeline summary: {known_count} known (DB), {unknown_count} unknown (Amina CLI), "
+             f"{reused_count} reused from cache")
+
+    # Persist bio-pipeline results for next refresh cycle
+    _persistent_sequences = dict(sequences)
+    _persistent_research = dict(research_results)
+    _persistent_amina = dict(amina_results)
 
     # ── Step 4: Refresh each city + detect changes ──
     updated = 0
@@ -476,11 +543,16 @@ async def refresh_all_cities() -> int:
             city_lower = city_name.lower()
 
             aqi_data = await fetch_aqi(lat, lon, city_name)
+            weather_data = await fetch_weather(lat, lon, city_name)
             outbreaks = await generate_outbreaks_from_who(city_name, country)
 
             all_threats = []
             if aqi_data.get("is_threat"):
                 all_threats.append(aqi_data)
+            # Weather & environmental threats
+            for wt in weather_data.get("threats", []):
+                if wt.get("is_threat"):
+                    all_threats.append(wt)
             all_threats.extend([o for o in outbreaks if o.get("is_threat")])
 
             nutrient_recs = (
@@ -496,6 +568,16 @@ async def refresh_all_cities() -> int:
                 "city": city_name,
                 "country": country,
                 "aqi": aqi_data,
+                "weather": {
+                    "temp_c": weather_data.get("temp_c"),
+                    "feels_like_c": weather_data.get("feels_like_c"),
+                    "humidity": weather_data.get("humidity"),
+                    "condition": weather_data.get("condition"),
+                    "condition_detail": weather_data.get("condition_detail"),
+                    "wind_speed_ms": weather_data.get("wind_speed_ms"),
+                    "source": weather_data.get("source", "unknown"),
+                    "environmental_threats": weather_data.get("threats", []),
+                },
                 "outbreaks": outbreaks,
                 "active_threats": all_threats,
                 "threat_count": len(all_threats),
@@ -634,6 +716,12 @@ async def health():
         "refresh_count": _refresh_count,
         "subscribers": total_subs,
         "subscribed_cities": list(_subscribers.keys()),
+        "pipeline_cache": {
+            "cached_sequences": len(_persistent_sequences),
+            "cached_research": len(_persistent_research),
+            "cached_amina": len(_persistent_amina),
+            "tracked_outbreaks": len(_prev_outbreak_fps),
+        },
         "who_cache": get_who_cache_info(),
         "sequence_cache": get_sequence_cache_info(),
         "research_cache": get_research_cache_info(),

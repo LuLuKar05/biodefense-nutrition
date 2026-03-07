@@ -3,6 +3,7 @@ meal_manager.py — Meal plan & meal log storage
 ===============================================
 Local JSON storage for:
   - Active meal plan (today's plan, pending or accepted)
+  - Meal schedule with per-meal delivery tracking
   - Plan history (all accepted plans, date-indexed)
   - Meal log (actual meals eaten, user evidence)
   - Rejected plans (to avoid regenerating similar meals)
@@ -127,6 +128,17 @@ def get_recent_meal_names(user_id: str, days: int = 7) -> list[str]:
     plans = get_plan_history(user_id, days)
     names = []
     for plan in plans:
+        # New schedule-based format
+        schedule = plan.get("schedule", [])
+        if schedule:
+            for meal in schedule:
+                for item in meal.get("items", []):
+                    if isinstance(item, dict):
+                        names.append(item.get("name", ""))
+                    elif isinstance(item, str):
+                        names.append(item)
+            continue
+        # Legacy {meals: {breakfast: [...]}} format
         meals = plan.get("meals", {})
         for meal_type in ("breakfast", "lunch", "dinner", "snacks"):
             items = meals.get(meal_type, [])
@@ -327,3 +339,72 @@ def get_weekly_balance(user_id: str, target_macros: dict[str, Any]) -> dict[str,
         "excess": excess,
         "status": "deficient" if deficiencies else ("excess" if excess else "balanced"),
     }
+
+
+# ═════════════════════════════════════════════════════════════
+# MEAL SCHEDULE DELIVERY TRACKING
+# ═════════════════════════════════════════════════════════════
+
+def get_meal_schedule(user_id: str) -> list[dict[str, Any]]:
+    """Get today's meal schedule from the active plan. Returns [] if none."""
+    plan = get_active_plan(user_id)
+    if not plan or plan.get("status") != "accepted":
+        return []
+    return plan.get("schedule", [])
+
+
+def get_next_pending_meal(user_id: str) -> dict[str, Any] | None:
+    """
+    Get the next undelivered meal from today's accepted schedule.
+    Returns the meal dict or None if all delivered / no schedule.
+    """
+    schedule = get_meal_schedule(user_id)
+    for meal in schedule:
+        if not meal.get("delivered", False):
+            return meal
+    return None
+
+
+def mark_meal_delivered(user_id: str, meal_index: int) -> bool:
+    """
+    Mark a specific meal slot as delivered (by index in schedule).
+    Returns True if successfully marked.
+    """
+    plan = get_active_plan(user_id)
+    if not plan or plan.get("status") != "accepted":
+        return False
+    schedule = plan.get("schedule", [])
+    if meal_index < 0 or meal_index >= len(schedule):
+        return False
+    schedule[meal_index]["delivered"] = True
+    schedule[meal_index]["delivered_at"] = _now_iso()
+    save_active_plan(user_id, plan)
+    log.info(f"[{user_id}] Meal {meal_index} marked delivered")
+    return True
+
+
+def get_next_pending_meal_with_index(user_id: str) -> tuple[dict[str, Any] | None, int]:
+    """Get next undelivered meal and its index. Returns (meal, index) or (None, -1)."""
+    schedule = get_meal_schedule(user_id)
+    for i, meal in enumerate(schedule):
+        if not meal.get("delivered", False):
+            return meal, i
+    return None, -1
+
+
+def get_all_users_with_pending_meals() -> list[tuple[str, dict[str, Any], int]]:
+    """
+    Scan all user meal directories for accepted plans with pending meals.
+    Returns [(user_id, next_meal, meal_index), ...] for the background scheduler.
+    """
+    results = []
+    if not MEALS_DIR.exists():
+        return results
+    for user_dir in MEALS_DIR.iterdir():
+        if not user_dir.is_dir():
+            continue
+        user_id = user_dir.name
+        meal, idx = get_next_pending_meal_with_index(user_id)
+        if meal is not None:
+            results.append((user_id, meal, idx))
+    return results

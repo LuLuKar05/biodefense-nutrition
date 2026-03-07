@@ -121,6 +121,48 @@ THREAT_NUTRIENT_MAP: dict[str, dict[str, Any]] = {
             "Maintain good hygiene and ensure adequate protein for immune repair",
         ],
     },
+    "heat_stress": {
+        "description": "Hydration, electrolyte support, and cooling anti-inflammatory compounds",
+        "compounds": ["Quercetin", "Lycopene", "EGCG", "Curcumin"],
+        "general_advice": [
+            "Stay hydrated — drink water frequently, aim for 2.5-3L in hot weather",
+            "Eat water-rich fruits: watermelon, cucumber, berries, oranges",
+            "Lycopene (tomatoes) protects skin and reduces heat-induced oxidative stress",
+            "Avoid heavy meals — eat lighter, more frequent meals to reduce metabolic heat",
+            "Include electrolyte-rich foods: bananas, coconut water, leafy greens",
+        ],
+    },
+    "cold_snap": {
+        "description": "Immune-boosting and warming compounds for cold weather defence",
+        "compounds": ["Gingerol", "Allicin", "Curcumin", "EGCG", "Quercetin"],
+        "general_advice": [
+            "Warm ginger tea boosts circulation and has anti-inflammatory effects",
+            "Garlic and onions support immune function during cold exposure",
+            "Hot soups and stews with turmeric provide warming nutrition",
+            "Increase vitamin C (citrus, peppers, kiwi) and zinc (seeds, legumes)",
+            "Eat calorie-dense meals — your body burns more energy staying warm",
+        ],
+    },
+    "high_humidity": {
+        "description": "Anti-fungal and respiratory-protective compounds for high moisture environments",
+        "compounds": ["Allicin", "EGCG", "Quercetin", "Curcumin"],
+        "general_advice": [
+            "Garlic's allicin has natural anti-fungal properties against mold exposure",
+            "Green tea supports respiratory health in humid conditions",
+            "Include anti-inflammatory foods to protect airways from moisture irritation",
+            "Ensure adequate vitamin D — humidity often correlates with reduced sun exposure",
+        ],
+    },
+    "storm_risk": {
+        "description": "Immune support and preparedness nutrition for severe weather",
+        "compounds": ["Quercetin", "EGCG", "Curcumin", "Allicin"],
+        "general_advice": [
+            "Keep shelf-stable nutritious foods ready (nuts, dried fruit, canned fish)",
+            "Maintain immune support with antioxidant-rich foods",
+            "Avoid raw/undercooked foods if water supply may be affected by flooding",
+            "Stay hydrated even when staying indoors",
+        ],
+    },
 }
 
 PATHOGEN_TO_CATEGORY: dict[str, str] = {
@@ -143,6 +185,12 @@ def _resolve_category(threat: dict[str, Any]) -> str:
     """Determine the coarse nutrient mapping category for a threat."""
     if threat.get("type") == "air_quality":
         return "air_quality"
+    # Weather/environmental threats use their own category directly
+    if threat.get("type") == "weather":
+        cat = threat.get("category", "")
+        if cat in THREAT_NUTRIENT_MAP:
+            return cat
+        return "cold_snap"  # safe default for unknown weather
     name_lower = threat.get("name", "").lower()
     for keyword, category in NAME_TO_CATEGORY.items():
         if keyword in name_lower:

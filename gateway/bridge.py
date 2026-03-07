@@ -45,12 +45,19 @@ from typing import Any
 
 import httpx
 import uvicorn
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 
 # ── Setup ───────────────────────────────────────────────────
-ROOT = Path(__file__).resolve().parent
-load_dotenv(dotenv_path=str(ROOT / ".env"), override=True)
+ROOT = Path(__file__).resolve().parent          # gateway/
+PROJECT_ROOT = ROOT.parent                       # project root (has agents/, server/)
+
+# Ensure project root is on sys.path so 'agents' and 'server' can be imported
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+load_dotenv(dotenv_path=str(PROJECT_ROOT / ".env"), override=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -65,10 +72,31 @@ OPENCLAW_HOOKS_TOKEN: str = os.getenv("OPENCLAW_HOOKS_TOKEN", "").strip()
 THREAT_BACKEND_URL: str = os.getenv("THREAT_BACKEND_URL", "http://127.0.0.1:8100").strip()
 
 # ── FastAPI App ─────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    from agents import orchestrator
+    orchestrator.set_callback_url(f"http://127.0.0.1:{GATEWAY_BRIDGE_PORT}/threat-alert")
+    orchestrator.set_push_fn(push_to_channel)
+    log.info(f"Gateway bridge configured — callback URL: http://127.0.0.1:{GATEWAY_BRIDGE_PORT}/threat-alert")
+
+    from agents.orchestrator import _meal_scheduler_loop
+    asyncio.create_task(_meal_scheduler_loop())
+    log.info("Meal scheduler started (gateway mode)")
+
+    try:
+        await _auto_subscribe_existing_profiles()
+    except Exception as e:
+        log.warning(f"Auto-subscribe on startup failed: {e}")
+
+    yield  # app is running
+
+
 app = FastAPI(
     title="OpenClaw Gateway Bridge",
-    description="Bridges OpenClaw Gateway ↔ Agent Orchestrator for multi-channel support",
+    description="Bridges OpenClaw Gateway <-> Agent Orchestrator for multi-channel support",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 
@@ -346,7 +374,7 @@ async def _auto_subscribe_existing_profiles() -> None:
     """
     from agents.orchestrator import _ensure_subscribed
 
-    profiles_dir = ROOT / "data" / "profiles"
+    profiles_dir = PROJECT_ROOT / "data" / "profiles"
     if not profiles_dir.exists():
         return
 
@@ -363,28 +391,6 @@ async def _auto_subscribe_existing_profiles() -> None:
             log.warning(f"Auto-subscribe failed for {profile_file.name}: {e}")
 
 
-@app.on_event("startup")
-async def on_startup():
-    """
-    On startup:
-    1. Configure orchestrator to use gateway bridge callback URL
-    2. Auto-subscribe existing profiles to Layer 3
-    """
-    from agents import orchestrator
-
-    # Tell orchestrator to use this bridge's URL for Layer 3 callbacks
-    orchestrator.set_callback_url(f"http://127.0.0.1:{GATEWAY_BRIDGE_PORT}/threat-alert")
-
-    # Tell orchestrator to use push_to_channel for outbound messages
-    orchestrator.set_push_fn(push_to_channel)
-
-    log.info(f"Gateway bridge configured — callback URL: http://127.0.0.1:{GATEWAY_BRIDGE_PORT}/threat-alert")
-
-    # Auto-subscribe existing profiles
-    try:
-        await _auto_subscribe_existing_profiles()
-    except Exception as e:
-        log.warning(f"Auto-subscribe on startup failed: {e}")
 
 
 # ═════════════════════════════════════════════════════════════
@@ -394,7 +400,7 @@ async def on_startup():
 def main():
     """Start the gateway bridge server."""
     print("=" * 62)
-    print("  NutriShield Gateway Bridge (OpenClaw ↔ Orchestrator)")
+    print("  NutriShield Gateway Bridge (OpenClaw <-> Orchestrator)")
     print("=" * 62)
     print(f"  Bridge Port  : {GATEWAY_BRIDGE_PORT}")
     print(f"  OpenClaw     : {OPENCLAW_GATEWAY_URL}")
@@ -402,10 +408,10 @@ def main():
     print(f"  Hooks Token  : {'SET' if OPENCLAW_HOOKS_TOKEN else 'NOT SET'}")
     print()
     print("  Endpoints:")
-    print(f"    POST /hooks/agent   — receive messages from OpenClaw")
-    print(f"    POST /threat-alert  — receive alerts from Layer 3")
-    print(f"    GET  /health        — health check")
-    print(f"    GET  /conversations — debug: tracked conversations")
+    print(f"    POST /hooks/agent   - receive messages from OpenClaw")
+    print(f"    POST /threat-alert  - receive alerts from Layer 3")
+    print(f"    GET  /health        - health check")
+    print(f"    GET  /conversations - debug: tracked conversations")
     print()
     print("  Make sure Layer 3 is running (python -m threat_backend)")
     print("  Then start OpenClaw:  cd openclaw && openclaw gateway --port 18789")

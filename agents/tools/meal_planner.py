@@ -1,13 +1,15 @@
 """
-meal_planner.py — FLock-powered meal plan generation
-=====================================================
-Generates one-day meal plans via FLock LLM, respecting:
+meal_planner.py — FLock-powered per-meal plan generation
+=========================================================
+Generates individual meals with scheduling, respecting:
   - User macros (from profile)
   - Diet preferences and allergies
   - Previously rejected meals (today)
   - Recent meal history (7-day dedup window)
+  - Active health threats (from Layer 3)
+  - Configurable meal count (user preference or goal-based)
 
-Returns structured plan: {meals: {breakfast, lunch, dinner, snacks}, totals}
+Returns structured schedule: [{meal_type, time_slot, items, macros}, ...]
 Includes fallback: template-based plan when FLock is down.
 """
 from __future__ import annotations
@@ -60,7 +62,69 @@ _plan_cb = CircuitBreaker(name="meal_planner", max_failures=3, cooldown_secs=60.
 
 
 # ═════════════════════════════════════════════════════════════
-# MAIN: Generate Meal Plan
+# MEAL SCHEDULE — time slots per meal count
+# ═════════════════════════════════════════════════════════════
+
+MEAL_SCHEDULES: dict[int, list[dict[str, str]]] = {
+    3: [
+        {"meal_type": "breakfast", "time_slot": "07:30", "label": "Breakfast"},
+        {"meal_type": "lunch",     "time_slot": "12:30", "label": "Lunch"},
+        {"meal_type": "dinner",    "time_slot": "19:00", "label": "Dinner"},
+    ],
+    4: [
+        {"meal_type": "breakfast", "time_slot": "07:30", "label": "Breakfast"},
+        {"meal_type": "lunch",     "time_slot": "12:30", "label": "Lunch"},
+        {"meal_type": "snack",     "time_slot": "15:30", "label": "Afternoon Snack"},
+        {"meal_type": "dinner",    "time_slot": "19:00", "label": "Dinner"},
+    ],
+    5: [
+        {"meal_type": "breakfast",      "time_slot": "07:30", "label": "Breakfast"},
+        {"meal_type": "morning_snack",  "time_slot": "10:30", "label": "Morning Snack"},
+        {"meal_type": "lunch",          "time_slot": "13:00", "label": "Lunch"},
+        {"meal_type": "afternoon_snack","time_slot": "16:00", "label": "Afternoon Snack"},
+        {"meal_type": "dinner",         "time_slot": "19:30", "label": "Dinner"},
+    ],
+    6: [
+        {"meal_type": "breakfast",      "time_slot": "07:00", "label": "Breakfast"},
+        {"meal_type": "morning_snack",  "time_slot": "10:00", "label": "Morning Snack"},
+        {"meal_type": "lunch",          "time_slot": "12:30", "label": "Lunch"},
+        {"meal_type": "afternoon_snack","time_slot": "15:30", "label": "Afternoon Snack"},
+        {"meal_type": "dinner",         "time_slot": "18:30", "label": "Dinner"},
+        {"meal_type": "evening_snack",  "time_slot": "21:00", "label": "Evening Snack"},
+    ],
+}
+
+
+def determine_meal_count(profile: dict[str, Any]) -> int:
+    """
+    Determine optimal number of meals per day.
+    Uses user preference if set, otherwise calculates from goal.
+    """
+    meals_pref = profile.get("meals_per_day")
+    if meals_pref:
+        try:
+            n = int(meals_pref)
+            if 3 <= n <= 6:
+                return n
+        except (ValueError, TypeError):
+            pass
+
+    goal = profile.get("goal", "maintain")
+    if goal == "bulk":
+        return 5
+    elif goal == "cut":
+        return 4
+    else:
+        return 3
+
+
+def get_schedule_slots(meal_count: int) -> list[dict[str, str]]:
+    """Get time slots for the given meal count."""
+    return MEAL_SCHEDULES.get(meal_count, MEAL_SCHEDULES[3])
+
+
+# ═════════════════════════════════════════════════════════════
+# MAIN: Generate Full Day Schedule (individual meals)
 # ═════════════════════════════════════════════════════════════
 
 async def generate_plan(
@@ -68,65 +132,88 @@ async def generate_plan(
     profile: dict[str, Any],
     *,
     regenerate: bool = False,
+    threat_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
-    Generate a one-day meal plan for the user.
-
-    Args:
-        user_id: User identifier
-        profile: Full onboarding profile (must contain weight, height, age, sex, goal, diet, allergies)
-        regenerate: If True, avoids rejected meals more aggressively
+    Generate a per-meal schedule for the day.
 
     Returns:
-        Structured plan dict:
         {
-          "meals": {"breakfast": [...], "lunch": [...], "dinner": [...], "snacks": [...]},
+          "meal_count": N,
+          "schedule": [
+            {"meal_type": "breakfast", "time_slot": "07:30", "label": "...",
+             "items": [...], "meal_macros": {...}, "delivered": False},
+            ...
+          ],
           "totals": {"calories": N, "protein_g": N, "carbs_g": N, "fat_g": N},
+          "threat_adaptations": [...],
           "source": "flock" | "template"
         }
     """
     macros = calculate_macros(profile)
     diet = profile.get("diet", "standard")
     allergies = profile.get("allergies", "none")
+    meal_count = determine_meal_count(profile)
+    slots = get_schedule_slots(meal_count)
 
-    # Collect avoidance lists
     rejected_names = get_rejected_meal_names(user_id) if regenerate else []
     recent_names = get_recent_meal_names(user_id, days=7)
     avoid_list = list(set(rejected_names + recent_names))
-
-    # Already consumed today (for partial-day plans)
     consumed = get_today_consumed(user_id)
+    threat_hints = _build_threat_hints(threat_context)
 
-    # Try FLock first, fall back to templates
     plan = None
     if FLOCK_API_KEY and _plan_cb.should_call():
-        plan = await _generate_flock_plan(
+        plan = await _generate_flock_schedule(
             macros=macros,
             diet=diet,
             allergies=allergies,
             avoid_list=avoid_list,
             consumed=consumed,
+            meal_count=meal_count,
+            slots=slots,
+            threat_hints=threat_hints,
         )
 
     if plan is None:
-        plan = _generate_template_plan(macros, diet, avoid_list)
+        plan = _generate_template_schedule(macros, diet, avoid_list, slots)
 
     return plan
 
 
+def _build_threat_hints(context: dict[str, Any] | None) -> str:
+    """Build threat adaptation hints for the LLM prompt."""
+    if not context:
+        return ""
+    lines = []
+    threat_type = context.get("threat_type", "")
+    if threat_type:
+        lines.append(f"ACTIVE HEALTH THREATS: {threat_type}")
+    boost = context.get("boost_nutrients", [])
+    if boost:
+        lines.append(f"PRIORITIZE THESE FOODS: {', '.join(boost[:8])}")
+    recommendation = context.get("recommendation", "")
+    if recommendation:
+        lines.append(f"DIETARY GOAL: {recommendation}")
+    return "\n".join(lines)
+
+
 # ═════════════════════════════════════════════════════════════
-# FLOCK-POWERED GENERATION
+# FLOCK-POWERED GENERATION (per-meal schedule)
 # ═════════════════════════════════════════════════════════════
 
-async def _generate_flock_plan(
+async def _generate_flock_schedule(
     *,
     macros: dict[str, Any],
     diet: str,
     allergies: str,
     avoid_list: list[str],
     consumed: dict[str, float],
+    meal_count: int,
+    slots: list[dict[str, str]],
+    threat_hints: str,
 ) -> dict[str, Any] | None:
-    """Call FLock to generate a meal plan. Returns structured plan or None."""
+    """Call FLock to generate a per-meal schedule."""
 
     avoid_str = ", ".join(avoid_list[:30]) if avoid_list else "none"
     consumed_str = (
@@ -137,9 +224,16 @@ async def _generate_flock_plan(
         else "No meals logged yet today"
     )
 
-    system_prompt = f"""You are a precision nutrition planner. Generate a ONE-DAY meal plan.
+    slot_desc = "\n".join(
+        f"  {i+1}. {s['label']} at {s['time_slot']} (type: {s['meal_type']})"
+        for i, s in enumerate(slots)
+    )
 
-TARGET MACROS:
+    threat_section = f"\n\nHEALTH THREAT ADAPTATIONS:\n{threat_hints}" if threat_hints else ""
+
+    system_prompt = f"""You are a precision nutrition planner. Generate a {meal_count}-meal schedule.
+
+TARGET MACROS (full day):
   Calories: {macros['target_calories']} kcal
   Protein: {macros['protein_g']}g
   Carbs: {macros['carbs_g']}g
@@ -149,27 +243,29 @@ DIET TYPE: {diet}
 ALLERGIES/RESTRICTIONS: {allergies}
 {consumed_str}
 
+MEAL SCHEDULE ({meal_count} meals):
+{slot_desc}
+
 MEALS TO AVOID (already eaten recently or rejected):
-{avoid_str}
+{avoid_str}{threat_section}
 
 RULES:
 1. Return ONLY valid JSON — no markdown, no explanation.
 2. JSON format:
 {{
-  "meals": {{
-    "breakfast": [{{"name": "...", "protein_g": N, "carbs_g": N, "fat_g": N, "calories": N}}],
-    "lunch": [{{"name": "...", "protein_g": N, "carbs_g": N, "fat_g": N, "calories": N}}],
-    "dinner": [{{"name": "...", "protein_g": N, "carbs_g": N, "fat_g": N, "calories": N}}],
-    "snacks": [{{"name": "...", "protein_g": N, "carbs_g": N, "fat_g": N, "calories": N}}]
-  }}
+  "meals": [
+    {{"meal_type": "breakfast", "items": [{{"name": "...", "protein_g": N, "carbs_g": N, "fat_g": N, "calories": N}}]}}
+  ]
 }}
-3. Each meal slot has 1-2 items.
-4. Total macros should closely match the targets (±10%).
-5. Use realistic, common food items with accurate macro estimates.
-6. DO NOT use any meals from the avoid list.
-7. Make meals practical and appetizing.
-8. Adjust portions if the user already ate today to hit remaining targets.
-9. Do NOT wrap in markdown code fences. Raw JSON only."""
+3. Generate exactly {meal_count} meal objects matching the schedule above.
+4. Distribute macros intelligently across meals (bigger meals for lunch/dinner, lighter for snacks).
+5. Total macros should closely match the targets (±10%).
+6. Use realistic, common food items with accurate macro estimates.
+7. DO NOT use any meals from the avoid list.
+8. Make meals practical and appetizing.
+9. If health threats are specified, incorporate protective foods where natural.
+10. Adjust portions if the user already ate today.
+11. Do NOT wrap in markdown code fences. Raw JSON only."""
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -183,10 +279,10 @@ RULES:
                     "model": FLOCK_MODEL,
                     "messages": [
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": "Generate my meal plan for today."},
+                        {"role": "user", "content": f"Generate my {meal_count}-meal schedule for today."},
                     ],
                     "temperature": 0.7,
-                    "max_tokens": 1200,
+                    "max_tokens": 1500,
                 },
             )
 
@@ -197,22 +293,35 @@ RULES:
 
         data = resp.json()
         content = data["choices"][0]["message"]["content"]
-
-        # Strip <think> tags from Qwen3
         content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
-
-        # Strip markdown fences if present
         content = re.sub(r"^```(?:json)?\s*", "", content)
         content = re.sub(r"\s*```$", "", content)
 
-        plan = json.loads(content)
+        raw_plan = json.loads(content)
         _plan_cb.record_success()
 
-        # Calculate totals
-        plan["totals"] = _calc_totals(plan.get("meals", {}))
-        plan["source"] = "flock"
+        raw_meals = raw_plan.get("meals", [])
+        schedule = []
+        for i, slot in enumerate(slots):
+            meal_data = raw_meals[i] if i < len(raw_meals) else {}
+            items = meal_data.get("items", [])
+            schedule.append({
+                **slot,
+                "items": items,
+                "meal_macros": _calc_meal_macros(items),
+                "delivered": False,
+            })
 
-        log.info(f"FLock generated plan: {plan['totals']['calories']} kcal")
+        totals = _calc_schedule_totals(schedule)
+        plan = {
+            "meal_count": meal_count,
+            "schedule": schedule,
+            "totals": totals,
+            "threat_adaptations": [threat_hints] if threat_hints else [],
+            "source": "flock",
+        }
+
+        log.info(f"FLock generated {meal_count}-meal schedule: {totals['calories']} kcal")
         return plan
 
     except json.JSONDecodeError as e:
@@ -220,7 +329,7 @@ RULES:
         _plan_cb.record_failure()
         return None
     except Exception as e:
-        log.warning(f"FLock plan request failed: {e}")
+        log.warning(f"FLock schedule request failed: {e}")
         _plan_cb.record_failure()
         return None
 
@@ -229,49 +338,59 @@ RULES:
 # TEMPLATE FALLBACK
 # ═════════════════════════════════════════════════════════════
 
-def _generate_template_plan(
+def _generate_template_schedule(
     macros: dict[str, Any],
     diet: str,
     avoid_list: list[str],
+    slots: list[dict[str, str]],
 ) -> dict[str, Any]:
-    """Generate a plan from local templates when FLock is unavailable."""
+    """Generate a schedule from local templates when FLock is unavailable."""
     templates = _load_templates().get("templates", {})
-
-    # Fall back to standard if diet not in templates
     diet_meals = templates.get(diet, templates.get("standard", {}))
     avoid_lower = {n.lower() for n in avoid_list}
 
-    plan_meals: dict[str, list[dict]] = {}
-    for meal_type in ("breakfast", "lunch", "dinner", "snacks"):
-        options = diet_meals.get(meal_type, [])
-        # Pick first option not in avoid list
+    type_to_template = {
+        "breakfast": "breakfast", "lunch": "lunch", "dinner": "dinner",
+        "snack": "snacks", "morning_snack": "snacks",
+        "afternoon_snack": "snacks", "evening_snack": "snacks",
+    }
+
+    schedule = []
+    for slot in slots:
+        tpl_key = type_to_template.get(slot["meal_type"], "snacks")
+        options = diet_meals.get(tpl_key, [])
         chosen = None
         for opt in options:
             if opt.get("name", "").lower() not in avoid_lower:
                 chosen = opt
                 break
         if chosen is None and options:
-            chosen = options[0]  # fallback to first if all avoided
-        plan_meals[meal_type] = [chosen] if chosen else []
+            chosen = options[0]
 
-    # Scale to match target calories approximately
-    raw_totals = _calc_totals(plan_meals)
+        items = [dict(chosen)] if chosen else []
+        schedule.append({
+            **slot, "items": items,
+            "meal_macros": _calc_meal_macros(items), "delivered": False,
+        })
+
+    # Scale to match target calories
+    raw_totals = _calc_schedule_totals(schedule)
     raw_cal = raw_totals.get("calories", 1) or 1
     target_cal = macros.get("target_calories", raw_cal)
     scale = target_cal / raw_cal
 
     if abs(scale - 1.0) > 0.05:
-        for meal_type, items in plan_meals.items():
-            for item in items:
-                item["protein_g"] = round(item.get("protein_g", 0) * scale)
-                item["carbs_g"] = round(item.get("carbs_g", 0) * scale)
-                item["fat_g"] = round(item.get("fat_g", 0) * scale)
-                item["calories"] = round(item.get("calories", 0) * scale)
-                item["name"] = item.get("name", "Meal") + " (adjusted)"
+        for meal in schedule:
+            for item in meal["items"]:
+                for key in ("protein_g", "carbs_g", "fat_g", "calories"):
+                    item[key] = round(item.get(key, 0) * scale)
+            meal["meal_macros"] = _calc_meal_macros(meal["items"])
 
     return {
-        "meals": plan_meals,
-        "totals": _calc_totals(plan_meals),
+        "meal_count": len(slots),
+        "schedule": schedule,
+        "totals": _calc_schedule_totals(schedule),
+        "threat_adaptations": [],
         "source": "template",
     }
 
@@ -281,22 +400,11 @@ def _generate_template_plan(
 # ═════════════════════════════════════════════════════════════
 
 async def estimate_meal_macros(description: str) -> dict[str, Any]:
-    """
-    Use FLock to estimate macros from a text description of what the user ate.
-    Falls back to a rough estimate on failure.
-
-    Args:
-        description: User's text description (e.g., "grilled chicken with rice and salad")
-
-    Returns:
-        {"calories": N, "protein_g": N, "carbs_g": N, "fat_g": N, "confidence": "high"|"low"}
-    """
+    """Use FLock to estimate macros from a text description."""
     if FLOCK_API_KEY and _plan_cb.should_call():
         estimated = await _estimate_flock(description)
         if estimated:
             return estimated
-
-    # Rough fallback estimate
     return _estimate_rough(description)
 
 
@@ -351,20 +459,13 @@ Be realistic. If unsure, estimate conservatively. No markdown, just JSON."""
 def _estimate_rough(description: str) -> dict[str, Any]:
     """Very rough keyword-based macro estimate as last resort."""
     desc = description.lower()
-
-    # Base estimate: a moderate meal
     cal, prot, carbs, fat = 400, 20, 40, 15
 
-    # Protein-heavy keywords
     protein_words = ["chicken", "fish", "salmon", "tuna", "beef", "steak", "egg",
                      "tofu", "turkey", "shrimp", "pork", "protein"]
-    # Carb-heavy keywords
     carb_words = ["rice", "bread", "pasta", "noodle", "potato", "oat", "cereal",
                   "tortilla", "wrap", "sandwich"]
-    # Fat-heavy keywords
-    fat_words = ["butter", "cheese", "avocado", "nut", "oil", "cream", "bacon",
-                 "fried"]
-    # Light keywords
+    fat_words = ["butter", "cheese", "avocado", "nut", "oil", "cream", "bacon", "fried"]
     light_words = ["salad", "soup", "fruit", "yogurt", "smoothie", "snack"]
 
     protein_hits = sum(1 for w in protein_words if w in desc)
@@ -373,44 +474,72 @@ def _estimate_rough(description: str) -> dict[str, Any]:
     light_hits = sum(1 for w in light_words if w in desc)
 
     if protein_hits:
-        prot += 15 * protein_hits
-        cal += 60 * protein_hits
+        prot += 15 * protein_hits; cal += 60 * protein_hits
     if carb_hits:
-        carbs += 20 * carb_hits
-        cal += 80 * carb_hits
+        carbs += 20 * carb_hits; cal += 80 * carb_hits
     if fat_hits:
-        fat += 10 * fat_hits
-        cal += 90 * fat_hits
+        fat += 10 * fat_hits; cal += 90 * fat_hits
     if light_hits:
-        cal = max(200, cal - 100 * light_hits)
-        carbs = max(10, carbs - 10 * light_hits)
+        cal = max(200, cal - 100 * light_hits); carbs = max(10, carbs - 10 * light_hits)
 
-    return {
-        "calories": cal,
-        "protein_g": prot,
-        "carbs_g": carbs,
-        "fat_g": fat,
-        "confidence": "low",
-    }
+    return {"calories": cal, "protein_g": prot, "carbs_g": carbs, "fat_g": fat, "confidence": "low"}
 
 
 # ═════════════════════════════════════════════════════════════
-# FORMAT PLAN FOR DISPLAY
+# FORMAT — individual meal & full schedule
 # ═════════════════════════════════════════════════════════════
+
+MEAL_EMOJIS = {
+    "breakfast": "🌅", "morning_snack": "🥜", "lunch": "☀️",
+    "afternoon_snack": "🍎", "dinner": "🌙", "evening_snack": "🫖",
+    "snack": "🍎",
+}
+
+
+def format_single_meal(meal: dict[str, Any]) -> str:
+    """Format a single meal for proactive delivery to the user."""
+    emoji = MEAL_EMOJIS.get(meal.get("meal_type", ""), "🍽")
+    label = meal.get("label", meal.get("meal_type", "Meal").capitalize())
+    time_slot = meal.get("time_slot", "")
+    items = meal.get("items", [])
+    macros = meal.get("meal_macros", {})
+
+    lines = [f"{emoji} {label} ({time_slot})", ""]
+    for item in items:
+        name = item.get("name", "Unknown")
+        cal = item.get("calories", 0)
+        p = item.get("protein_g", 0)
+        c = item.get("carbs_g", 0)
+        f = item.get("fat_g", 0)
+        lines.append(f"  • {name}")
+        lines.append(f"    {cal} cal | P:{p}g C:{c}g F:{f}g")
+    lines.append("")
+    lines.append(f"  Meal total: {macros.get('calories', 0)} cal")
+
+    return "\n".join(lines)
+
 
 def format_plan(plan: dict[str, Any]) -> str:
-    """Format a meal plan for Telegram display."""
-    meals = plan.get("meals", {})
+    """Format the full day schedule overview."""
+    schedule = plan.get("schedule", [])
     totals = plan.get("totals", {})
     source = plan.get("source", "unknown")
+    meal_count = plan.get("meal_count", len(schedule))
+    threat_adaptations = plan.get("threat_adaptations", [])
 
-    lines = ["🍽 Your Meal Plan for Today", ""]
+    lines = [f"🍽 Your {meal_count}-Meal Plan", ""]
 
-    for meal_type, emoji in [("breakfast", "🌅"), ("lunch", "☀️"), ("dinner", "🌙"), ("snacks", "🍎")]:
-        items = meals.get(meal_type, [])
-        if not items:
-            continue
-        lines.append(f"{emoji} {meal_type.capitalize()}")
+    if threat_adaptations:
+        lines.append("⚠️ Adapted for active health threats")
+        lines.append("")
+
+    for meal in schedule:
+        emoji = MEAL_EMOJIS.get(meal.get("meal_type", ""), "🍽")
+        label = meal.get("label", "Meal")
+        time_slot = meal.get("time_slot", "")
+        items = meal.get("items", [])
+
+        lines.append(f"{emoji} {label} ({time_slot})")
         for item in items:
             name = item.get("name", "Unknown")
             cal = item.get("calories", 0)
@@ -436,9 +565,27 @@ def format_plan(plan: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-# ── Helper ──────────────────────────────────────────────────
+# ── Helpers ──────────────────────────────────────────────────
+
+def _calc_meal_macros(items: list[dict]) -> dict[str, int]:
+    totals = {"calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0}
+    for item in items:
+        for key in totals:
+            totals[key] += int(item.get(key, 0))
+    return totals
+
+
+def _calc_schedule_totals(schedule: list[dict]) -> dict[str, int]:
+    totals = {"calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0}
+    for meal in schedule:
+        m = meal.get("meal_macros", {})
+        for key in totals:
+            totals[key] += int(m.get(key, 0))
+    return totals
+
 
 def _calc_totals(meals: dict[str, list[dict]]) -> dict[str, int]:
+    """Legacy compat: calc totals from {meal_type: [items]} dict."""
     totals = {"calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0}
     for items in meals.values():
         if isinstance(items, list):

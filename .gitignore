@@ -49,6 +49,13 @@ data/threat_cache/
 
 .amina/
 
+# Design / internal docs (not for public repo)
+_spec/
+_design/
+instruction.md
+CLAUDE.md
+PROJECT.md
+
 # Logs
 *.log
 

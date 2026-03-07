@@ -48,6 +48,8 @@ from agents.tools.profile_manager import (
     load_profile,
 )
 from agents.tools.circuit_breaker import CircuitBreaker
+from agents.tools.meal_manager import get_all_users_with_pending_meals, mark_meal_delivered
+from agents.tools.meal_planner import format_single_meal
 
 # ── Logging ─────────────────────────────────────────────────
 logging.basicConfig(
@@ -126,6 +128,7 @@ COMMAND_ROUTES: dict[str, str] = {
     "/commands": "onboarding",
     "/profile": "onboarding",
     "/plan": "nutrition",
+    "/next": "nutrition",
     "/accept": "nutrition",
     "/regenerate": "nutrition",
     "/log": "nutrition",
@@ -590,6 +593,64 @@ async def _handle_proactive_alert(payload: dict[str, Any]) -> None:
 
 
 # ═════════════════════════════════════════════════════════════
+# PROACTIVE MEAL SCHEDULER — push meals at scheduled times
+# ═════════════════════════════════════════════════════════════
+
+MEAL_SCHEDULER_INTERVAL = 300  # check every 5 minutes
+
+
+def _is_meal_due(time_slot: str) -> bool:
+    """
+    Check if a meal's time slot is due (within the current window).
+    time_slot format: "HH:MM" (UTC).
+    A meal is due if current time >= time_slot and < time_slot + 30min.
+    """
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    try:
+        parts = time_slot.split(":")
+        slot_hour, slot_min = int(parts[0]), int(parts[1])
+        slot_time = now.replace(hour=slot_hour, minute=slot_min, second=0, microsecond=0)
+        window_end = slot_time + timedelta(minutes=30)
+        return slot_time <= now < window_end
+    except (ValueError, IndexError):
+        return False
+
+
+async def _meal_scheduler_loop() -> None:
+    """
+    Background loop that checks for pending meals due for delivery.
+    Runs every MEAL_SCHEDULER_INTERVAL seconds.
+    Scans all users with accepted plans, finds meals whose time slot
+    has arrived, and pushes the meal to the user.
+    """
+    log.info("Meal scheduler started (interval=%ds)", MEAL_SCHEDULER_INTERVAL)
+    while True:
+        try:
+            pending = get_all_users_with_pending_meals()
+            for user_id, meal, idx in pending:
+                time_slot = meal.get("time_slot", "")
+                if not _is_meal_due(time_slot):
+                    continue
+
+                label = meal.get("label", "Meal")
+                log.info(f"[{user_id}] Pushing meal: {label} ({time_slot})")
+
+                try:
+                    msg = f"Time for your next meal!\n\n{format_single_meal(meal)}"
+                    await push_message(user_id, msg)
+                    mark_meal_delivered(user_id, idx)
+                    log.info(f"[{user_id}] Meal delivered and marked: {label}")
+                except Exception as e:
+                    log.warning(f"[{user_id}] Failed to push meal: {e}")
+
+        except Exception as e:
+            log.error(f"Meal scheduler error: {e}")
+
+        await asyncio.sleep(MEAL_SCHEDULER_INTERVAL)
+
+
+# ═════════════════════════════════════════════════════════════
 # WEBHOOK MODE (for OpenClaw gateway)
 # ═════════════════════════════════════════════════════════════
 
@@ -722,7 +783,11 @@ async def telegram_polling() -> None:
     webhook_task = asyncio.create_task(_start_webhook_receiver())
     log.info("Webhook receiver task created")
 
-    # Wait a moment for webhook server to start
+    # Start proactive meal scheduler in background
+    meal_scheduler_task = asyncio.create_task(_meal_scheduler_loop())
+    log.info("Meal scheduler task created")
+
+    # Wait a moment for background servers to start
     await asyncio.sleep(1.0)
 
     # Auto-subscribe existing profiles
@@ -756,8 +821,9 @@ async def telegram_polling() -> None:
         print(f"  Profiles : {ROOT / 'data' / 'profiles'}")
         print(f"  Webhook  : http://127.0.0.1:{WEBHOOK_RECEIVER_PORT}/threat-alert")
         print(f"  Layer 3  : {THREAT_BACKEND_URL}")
+        print(f"  Scheduler: Meal push every {MEAL_SCHEDULER_INTERVAL}s")
         print()
-        print("  Commands: /start /plan /threats /profile /link /reset /help")
+        print("  Commands: /start /plan /next /threats /profile /link /reset /help")
         print(f"  Send a message to @{bot_name} in Telegram.")
         print("  Press Ctrl+C to stop.")
         print("=" * 58)
@@ -804,6 +870,7 @@ async def telegram_polling() -> None:
             except KeyboardInterrupt:
                 print("\n  Stopping orchestrator...")
                 webhook_task.cancel()
+                meal_scheduler_task.cancel()
                 break
             except Exception as exc:
                 consecutive_errors += 1

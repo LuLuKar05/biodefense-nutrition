@@ -1,31 +1,56 @@
-# NutriShield — Biodefense Nutrition AI
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Architecture: Zero-Knowledge](https://img.shields.io/badge/Privacy-Zero_Knowledge-success.svg)](#privacy--security)
+> **NutriShield** Privacy-first, AI-powered meal orchestration that adapts in real-time to local disease outbreaks, air pollution, and weather threats.
 
-> Privacy-first, AI-powered meal planning that adapts in real time to local disease outbreaks, air pollution, and weather threats — delivered to you on Telegram, Discord, and web chat.
+NutriShield is an autonomous biodefense nutrition assistant. By continuously monitoring environmental threat vectors—such as WHO disease outbreak data, real-time air quality indices, and severe weather patterns—NutriShield dynamically generates and pushes hyper-personalized, evidence-based meal plans to fortify the user's immune system against specific local risks.
 
 Built for the **OpenClaw Hackathon 2026**.
+---
+
+## 🚀 Key Features
+
+* **Omnichannel Delivery:** Seamless integration across Telegram, Discord, WhatsApp, Slack, and WebChat via OpenClaw Gateway.
+* **Zero-Knowledge Architecture:** Complete local execution for PII. Health data, macros, and biometric inputs never leave the host device.
+* **Live Threat Intelligence:** Automated polling of the WHO Disease Outbreak News (DON) and OpenWeatherMap APIs.
+* **Bioinformatics Pipeline:** For novel pathogens, NutriShield autonomously runs protein structure prediction (ESMFold) and molecular docking (DiffDock) via Amina AI to map top antiviral compounds to real-world ingredients.
+* **Proactive Alerting:** Background threat evaluation with instant webhook-driven push notifications when regional threat levels escalate.
 
 ---
 
-## What It Does
+## 🏗️ System Architecture
 
-NutriShield is a personal biodefense nutrition assistant. It monitors real-world health threats in your city — WHO outbreak data, air quality, weather hazards — and generates daily meal plans that protect you against those specific threats using evidence-based food science.
+NutriShield operates on a decoupled, three-tier architecture ensuring strict separation of concerns between user-facing interactions, agent orchestration, and threat intelligence.
 
-**Key capabilities:**
-- Onboards users through natural conversation (name, age, weight, allergies, fitness goals, city)
-- Calculates TDEE and macros **locally** — no health data leaves your device
-- Generates 3–6 meal-per-day schedules, proactively pushed at the right time
-- Queries WHO Disease Outbreak News (DON) for active threats in your region
-- Runs protein structure prediction (ESMFold) and molecular docking (DiffDock) for novel pathogens
-- Maps top antiviral/anti-inflammatory food compounds to real meal ingredients
-- Delivers alerts when new outbreaks emerge — across Telegram, Discord, WhatsApp, Slack, and web
+```mermaid
+graph TD
+    User((User Devices\nTelegram, Discord, Web)) <-->|Unified Format| L1
+    
+    subgraph Layer 1: OpenClaw Gateway :18789
+    L1[Multi-Channel Event Router]
+    end
 
-**Privacy model:** All user health data (name, age, weight, allergies, goals, meal logs) is stored **only in local JSON files** on the host machine. The threat intelligence backend is zero-knowledge — it never receives any user PII.
+    L1 <--> L2
+    
+    subgraph Layer 2: Orchestration & Agent Bridge :18790
+    L2[Intent Router] --> OA[Onboarding Agent\nFLock LLM]
+    L2 --> NA[Nutrition Agent\nFLock LLM]
+    L2 --> TH[Threat Handler]
+    
+    OA -.-> LocalData[(Local Profiles JSON\nZero PII Leak)]
+    NA -.-> LocalData
+    end
 
----
+    TH -->|GET /threats/{city}| L3
+    L3 -- Proactive Webhook\nPOST /threat-alert --> L2
 
-## Architecture
-
-NutriShield uses a three-layer privacy-first architecture. See [`_design/FlowChat.md`](_design/FlowChat.md) and [`_design/threatDetector.md`](_design/threatDetector.md) for full design detail.
+    subgraph Layer 3: Threat Intelligence Backend :8100
+    L3[Zero-Knowledge Threat Engine] --> WHO[WHO DON OData API]
+    L3 --> OWM[OpenWeatherMap API]
+    L3 --> Amina[Amina AI Pipeline\nESMFold / DiffDock]
+    end
+```
 
 ### System Overview
 
@@ -154,7 +179,27 @@ NutriShield uses a three-layer privacy-first architecture. See [`_design/FlowCha
 
 ### Known vs Unknown Disease — Two Different Paths
 
-Layer 3 handles diseases fundamentally differently based on whether they are in the curated database:
+The Layer 3 Threat Backend dynamically routes mitigation research based on pathogen novelty.
+```mermaid
+flowchart TD
+    Start[New WHO Outbreak Detected] --> Extract[Extract Disease Key]
+    Extract --> Known{Exists in Curated DB?}
+    
+    Known -- Yes --> DB[(disease_nutrition_db.json\nInfluenza, RSV, etc.)]
+    
+    Known -- No --> NCBI[NCBI Entrez: Fetch Sequence]
+    NCBI --> AminaLocal[Amina AI: Amino Composition\n& Motif Scanning]
+    AminaLocal --> AminaCloud[Amina CLI Cloud GPU:\nESMFold → P2Rank → DiffDock]
+    AminaCloud --> LLM[FLock LLM:\nNutritional Strategy Translation]
+    
+    DB --> Mapper[Nutrient Mapper]
+    LLM --> Mapper
+    
+    Mapper --> Output[Derive Top Compounds\n& Real Food Sources]
+    Output --> Alert[Broadcast Threat Webhook to Layer 2]
+
+```
+
 
 ```
 New outbreak detected from WHO DON

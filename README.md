@@ -25,7 +25,7 @@ NutriShield operates on a decoupled, three-tier architecture ensuring strict sep
 
 ```mermaid
 graph TD
-    User((User Devices\nTelegram, Discord, Web)) <-->|Unified Format| L1
+    User((User Devices<br>Telegram, Discord, Web)) <-->|Unified Format| L1
     
     subgraph Layer 1: OpenClaw Gateway :18789
     L1[Multi-Channel Event Router]
@@ -34,21 +34,21 @@ graph TD
     L1 <--> L2
     
     subgraph Layer 2: Orchestration & Agent Bridge :18790
-    L2[Intent Router] --> OA[Onboarding Agent\nFLock LLM]
-    L2 --> NA[Nutrition Agent\nFLock LLM]
+    L2[Intent Router] --> OA[Onboarding Agent<br>FLock LLM]
+    L2 --> NA[Nutrition Agent<br>FLock LLM]
     L2 --> TH[Threat Handler]
     
-    OA -.-> LocalData[(Local Profiles JSON\nZero PII Leak)]
+    OA -.-> LocalData[(Local Profiles JSON<br>Zero PII Leak)]
     NA -.-> LocalData
     end
 
-    TH -->|GET /threats/{city}| L3
-    L3 -- Proactive Webhook\nPOST /threat-alert --> L2
+    TH -->|"GET /threats/{city}"| L3
+    L3 -->|"Proactive Webhook<br>POST /threat-alert"| L2
 
     subgraph Layer 3: Threat Intelligence Backend :8100
     L3[Zero-Knowledge Threat Engine] --> WHO[WHO DON OData API]
     L3 --> OWM[OpenWeatherMap API]
-    L3 --> Amina[Amina AI Pipeline\nESMFold / DiffDock]
+    L3 --> Amina[Amina AI Pipeline<br>ESMFold / DiffDock]
     end
 ```
 
